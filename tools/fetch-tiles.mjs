@@ -9,7 +9,10 @@ import { dirname } from 'node:path';
 const ZMIN = 0;
 const ZMAX = 4;
 const ROOT = 'src/assets/tiles';
-const UA = 'CellScope-offline-map-builder/1.0 (personal app; OSM tiles per usage policy)';
+// OSM-France community tile server - tolerant of small one-off bulk fetches
+// (tile.openstreetmap.org 403-blocks them per usage policy).
+const URL_TPL = 'https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png';
+const UA = 'CellScope-offline-map-builder/1.0 (one-off personal bundle, 341 tiles z0-4; contact via app repo)';
 
 let ok = 0;
 let skip = 0;
@@ -25,7 +28,7 @@ for (let z = ZMIN; z <= ZMAX; z++) {
         continue;
       }
       mkdirSync(dirname(p), { recursive: true });
-      const url = `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+      const url = URL_TPL.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));
       let done = false;
       for (let t = 0; t < 3 && !done; t++) {
         try {

@@ -1,6 +1,6 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-const isDev = process.env.CELLSCOPE_DEV === '1';
+const isDev = process.env.CELLSCOPE_DEV === '1' || process.env.NODE_ENV === 'development';
 
 const config: CapacitorConfig = {
   appId: 'com.cellscope.app',

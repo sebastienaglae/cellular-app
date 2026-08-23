@@ -199,14 +199,20 @@ ion-title { font-size: 19px; }
 ion-note[slot="error"] { color: var(--cs-bad-fg); }
 
 /* bottom tabs - quiet, fade until used */
-ion-tab-bar {
+ion-tab-bar.cs-tabbar {
   border-top: 1px solid var(--cs-border);
-  --background: var(--ion-tab-bar-background);
+  background: var(--ion-tab-bar-background);
   height: calc(58px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
+  position: relative;
+  z-index: 10;
 }
 ion-tab-button {
   --color: var(--ion-color-medium);
+  --background: transparent;
   --color-selected: var(--cs-accent-fg);
   font-size: 11px;
+}
+ion-tab-button.cs-tab-active {
+  color: var(--cs-accent-fg);
 }

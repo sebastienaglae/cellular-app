@@ -1,7 +1,6 @@
 import { Component, NgZone, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
-  AlertController,
   IonBadge, IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader,
   IonCardSubtitle, IonCardTitle, IonChip, IonContent, IonHeader, IonIcon,
   IonLabel, IonNote, IonRefresher, IonRefresherContent,
@@ -10,7 +9,7 @@ import {
 import { Geolocation } from '@capacitor/geolocation';
 import { addIcons } from 'ionicons';
 import {
-  alertCircleOutline, locationOutline, navigateOutline, speedometerOutline, wifiOutline
+  alertCircleOutline, locationOutline, wifiOutline
 } from 'ionicons/icons';
 import { NativeService, Snapshot } from '../services/native.service';
 import { StoreService } from '../services/store.service';
@@ -45,6 +44,27 @@ import { MapViewComponent, MapMarker } from '../components/map-view.component';
         <ion-refresher-content></ion-refresher-content>
       </ion-refresher>
       <div class="cs-page">
+        @if (showPermCard()) {
+          <div class="cs-card perm-card">
+            <h3>Permissions needed</h3>
+            <p class="perm-text">
+              CellScope reads everything directly from your phone — no cloud, nothing leaves the device.
+            </p>
+            <ul class="perm-list">
+              <li><b>📍 Location</b> — required by Android to scan nearby cells and place you on the map.</li>
+              <li><b>📞 Phone</b> — operator name, PLMN codes and SIM details (MVNO detection).</li>
+              <li><b>📶 Nearby devices</b> — Wi-Fi name and signal of the network you use.</li>
+            </ul>
+            <div class="perm-actions">
+              <ion-button size="small" [disabled]="permBusy()" (click)="grantPerms()">
+                {{ permBusy() ? 'Asking…' : 'Grant access' }}
+              </ion-button>
+              <ion-button size="small" fill="outline" [disabled]="permBusy()" (click)="laterPerms()">Later</ion-button>
+            </div>
+            @if (permMsg()) { <div class="cs-dim" style="margin-top:8px;">{{ permMsg() }}</div> }
+          </div>
+        }
+
         @if (starlink().level !== 'none') {
           <div class="cs-card" [style.border-color]="'#7d5fff'">
             <h3><ion-icon name="alert-circle-outline"></ion-icon> Satellite / Starlink</h3>
@@ -163,6 +183,12 @@ import { MapViewComponent, MapMarker } from '../components/map-view.component';
       .chart-box { height:52px; margin-top:10px; }
       ul.reasons { margin:4px 0 0 18px; padding:0; font-size:12.5px; color:var(--ion-color-medium); }
       ul.reasons li { margin-bottom:2px; }
+      .perm-card { border-color: var(--cs-accent); }
+      .perm-text { font-size: 13px; margin: 0 0 10px; color: var(--ion-color-medium); }
+      .perm-list { margin: 0 0 12px; padding-left: 4px; list-style: none; font-size: 12.5px; line-height: 1.5; }
+      .perm-list li { margin-bottom: 8px; }
+      .perm-list b { font-weight: 600; }
+      .perm-actions { display: flex; gap: 10px; }
     `
   ]
 })
@@ -174,6 +200,9 @@ export class DashboardPage implements OnInit, OnDestroy {
   starlink = signal<ReturnType<typeof detectStarlink>>({ level: 'none', score: 0, ntnFlag: false, nameMatch: false, dtcPartner: null, ssidMatch: false, ouiMatch: false, reasons: [] });
   gps = signal<{ lat: number; lon: number; alt: number | null; speed: number | null; acc: number | null; head: number | null } | null>(null);
   gpsError = signal('');
+  showPermCard = signal(false);
+  permMsg = signal('');
+  permBusy = signal(false);
 
   private timer?: number;
   private gpsWatch?: string;
@@ -183,7 +212,6 @@ export class DashboardPage implements OnInit, OnDestroy {
     private zone: NgZone,
     private store: StoreService,
     private speedSrv: SpeedService,
-    private alertCtrl: AlertController,
     public router: Router
   ) {
     addIcons({ wifiOutline, alertCircleOutline, locationOutline });
@@ -206,7 +234,7 @@ export class DashboardPage implements OnInit, OnDestroy {
       });
     }, this.store.settings.pollMs);
     this.initGps();
-    this.maybeAskPermissions();
+    this.maybeShowPermCard();
   }
 
   ngOnDestroy(): void {
@@ -245,28 +273,27 @@ export class DashboardPage implements OnInit, OnDestroy {
     return g ? [{ lat: g.lat, lon: g.lon, color: '#d97757', size: 7, label: 'you' }] : [];
   }
 
-  private async maybeAskPermissions(): Promise<void> {
+  private async maybeShowPermCard(): Promise<void> {
     if (this.store.settings.permsAsked) return;
+    this.showPermCard.set(true);
+  }
+
+  async grantPerms(): Promise<void> {
+    this.permBusy.set(true);
+    try {
+      const cell = await this.native.requestPermissions();
+      const geo = await this.speedSrv.ensureGeoPermission();
+      this.permMsg.set(`Phone: ${cell ? 'granted' : 'denied'} · Location: ${geo ? 'granted' : 'denied'}`);
+      await this.store.saveSettings({ permsAsked: true });
+      setTimeout(() => this.showPermCard.set(false), 2600);
+    } finally {
+      this.permBusy.set(false);
+    }
+  }
+
+  async laterPerms(): Promise<void> {
     await this.store.saveSettings({ permsAsked: true });
-    const alert = await this.alertCtrl.create({
-      header: 'Permissions needed',
-      message:
-        'CellScope reads everything directly from your phone — no cloud, nothing leaves the device.\n\n' +
-        '📍 Location\nRequired by Android to scan nearby cells and to place you on the offline map.\n\n' +
-        '📞 Phone\nOperator name, PLMN codes and SIM details (MVNO detection).\n\n' +
-        '📶 Nearby devices\nWi-Fi name and signal of the network you are using.',
-      buttons: [
-        { text: 'Not now', role: 'cancel' },
-        {
-          text: 'Grant access',
-          handler: () => {
-            this.native.requestPermissions();
-            this.speedSrv.ensureGeoPermission();
-          }
-        }
-      ]
-    });
-    await alert.present();
+    this.showPermCard.set(false);
   }
 
   async refresh(ev?: CustomEvent): Promise<void> {
