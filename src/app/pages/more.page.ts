@@ -6,10 +6,17 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  globeOutline, mapOutline, peopleCircleOutline, pulseOutline,
-  serverOutline, settingsOutline
+  chevronForwardOutline, globeOutline, mapOutline, peopleCircleOutline,
+  pulseOutline, serverOutline, settingsOutline
 } from 'ionicons/icons';
 import { StoreService } from '../services/store.service';
+
+interface MoreLink {
+  icon: string;
+  title: string;
+  sub: string;
+  path: string;
+}
 
 @Component({
   selector: 'cs-more',
@@ -31,55 +38,21 @@ import { StoreService } from '../services/store.service';
           <div class="cs-badge dev" style="margin-bottom:12px;">DEV MODE — FAKE DATA</div>
         }
 
-        <div class="section">Tools</div>
-        <ion-list lines="none" class="more-list">
-          <ion-item button routerLink="/operators">
-            <ion-icon name="people-circle-outline" slot="start"></ion-icon>
-            <ion-label>
-              <h2>Operators / MVNO</h2>
-              <p>Network, SIM &amp; virtual-operator analysis</p>
-            </ion-label>
-          </ion-item>
-          <ion-item button routerLink="/ipinfo">
-            <ion-icon name="server-outline" slot="start"></ion-icon>
-            <ion-label>
-              <h2>IP / ISP</h2>
-              <p>Who owns your IP — offline ASN database</p>
-            </ion-label>
-          </ion-item>
-          <ion-item button routerLink="/ping">
-            <ion-icon name="pulse-outline" slot="start"></ion-icon>
-            <ion-label>
-              <h2>Ping</h2>
-              <p>Native ICMP latency &amp; jitter</p>
-            </ion-label>
-          </ion-item>
-          <ion-item button routerLink="/ookla">
-            <ion-icon name="globe-outline" slot="start"></ion-icon>
-            <ion-label>
-              <h2>Ookla Speedtest</h2>
-              <p>Open speedtest.net in a protected tab</p>
-            </ion-label>
-          </ion-item>
-        </ion-list>
-
-        <div class="section">Data</div>
-        <ion-list lines="none" class="more-list">
-          <ion-item button routerLink="/history">
-            <ion-icon name="map-outline" slot="start"></ion-icon>
-            <ion-label>
-              <h2>History &amp; Map</h2>
-              <p>Saved tests on the offline OSM map</p>
-            </ion-label>
-          </ion-item>
-          <ion-item button routerLink="/settings">
-            <ion-icon name="settings-outline" slot="start"></ion-icon>
-            <ion-label>
-              <h2>Settings</h2>
-              <p>Dev mode, endpoints, permissions</p>
-            </ion-label>
-          </ion-item>
-        </ion-list>
+        @for (group of groups; track group.title) {
+          <div class="section">{{ group.title }}</div>
+          <ion-list lines="none" class="more-list">
+            @for (l of group.links; track l.path) {
+              <ion-item button routerLink="{{l.path}}" detail="false">
+                <div class="tile" slot="start"><ion-icon name="{{l.icon}}"></ion-icon></div>
+                <ion-label>
+                  <h2>{{ l.title }}</h2>
+                  <p>{{ l.sub }}</p>
+                </ion-label>
+                <ion-icon class="chev" name="chevron-forward-outline" slot="end"></ion-icon>
+              </ion-item>
+            }
+          </ion-list>
+        }
 
         <ion-note class="foot">
           100% offline core · OSM tiles z0–4 · spectrum: spectrum-tracker.com · IP data: iptoasn.com
@@ -89,18 +62,45 @@ import { StoreService } from '../services/store.service';
   `,
   styles: [
     `
-      .section { font-family: var(--font-serif); font-size: 14px; opacity: .65; margin: 18px 4px 8px; }
-      .more-list { background: transparent; border: 1px solid var(--cs-border); border-radius: 16px; overflow: hidden; }
-      .more-list ion-item { --background: var(--cs-surface); }
-      .more-list ion-item ion-label h2 { font-family: var(--font-serif); font-size: 16px; }
-      .more-list ion-item ion-label p { font-size: 12px; color: var(--ion-color-medium); }
-      ion-icon { color: var(--cs-accent-fg); }
-      .foot { display: block; text-align: center; font-size: 11px; margin-top: 16px; }
+      .section { font-family: var(--font-serif); font-size: 14px; opacity: 0.6; margin: 20px 6px 8px; }
+      .more-list { background: var(--cs-surface); border: 1px solid var(--cs-border);
+                   border-radius: 16px; overflow: hidden; margin: 0; padding: 4px 0; }
+      .more-list ion-item { --background: transparent; --padding-start: 12px; --inner-padding-end: 10px;
+                            --min-height: 60px; }
+      .more-list ion-item h2 { font-family: var(--font-serif); font-size: 16px; font-weight: 600; }
+      .more-list ion-item p { font-size: 12px; color: var(--ion-color-medium); white-space: normal; }
+      .tile { width: 38px; height: 38px; border-radius: 11px; background: var(--cs-accent-soft);
+              display: flex; align-items: center; justify-content: center; margin-right: 12px; }
+      .tile ion-icon { font-size: 20px; color: var(--cs-accent-fg); }
+      .chev { color: var(--ion-color-medium); font-size: 15px; opacity: .6; }
+      .foot { display: block; text-align: center; font-size: 11px; margin: 18px 0 6px; line-height: 1.6; }
     `
   ]
 })
 export class MorePage {
+  readonly groups = [
+    {
+      title: 'Tools',
+      links: [
+        { icon: 'people-circle-outline', title: 'Operators / MVNO', sub: 'Network, SIM & virtual-operator analysis', path: '/operators' },
+        { icon: 'server-outline', title: 'IP / ISP', sub: 'Who owns your IP — offline ASN database', path: '/ipinfo' },
+        { icon: 'pulse-outline', title: 'Ping', sub: 'Native ICMP latency & jitter', path: '/ping' },
+        { icon: 'globe-outline', title: 'Ookla Speedtest', sub: 'Open speedtest.net in a protected tab', path: '/ookla' }
+      ]
+    },
+    {
+      title: 'Data',
+      links: [
+        { icon: 'map-outline', title: 'History & Map', sub: 'Saved tests on the offline OSM map', path: '/history' },
+        { icon: 'settings-outline', title: 'Settings', sub: 'Dev mode, endpoints, permissions', path: '/settings' }
+      ]
+    }
+  ];
+
   constructor(public store: StoreService) {
-    addIcons({ peopleCircleOutline, serverOutline, pulseOutline, globeOutline, mapOutline, settingsOutline });
+    addIcons({
+      peopleCircleOutline, serverOutline, pulseOutline, globeOutline,
+      mapOutline, settingsOutline, chevronForwardOutline
+    });
   }
 }

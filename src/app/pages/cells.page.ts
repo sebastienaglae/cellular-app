@@ -21,7 +21,6 @@ import { SignalBarsComponent } from '../components/signal-bars.component';
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-buttons slot="start"><ion-menu-button></ion-menu-button></ion-buttons>
         <ion-title>Cells ({{ cells().length }})</ion-title>
       </ion-toolbar>
     </ion-header>

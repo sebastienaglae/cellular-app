@@ -211,9 +211,14 @@ export class MapViewComponent implements OnChanges, OnInit, OnDestroy {
     if (!img) {
       img = new Image();
       img.onload = () => this.requestDraw();
+      img.onerror = () => {
+        // mark as permanently broken so we stop re-requesting/redrawing
+        img!.setAttribute('data-broken', '1');
+      };
       img.src = `assets/tiles/${tz}/${tx}/${ty}.png`;
       this.tiles.set(key, img);
     }
+    if (img.hasAttribute('data-broken')) return null;
     return img.complete && img.naturalWidth > 0 ? img : null;
   }
 

@@ -20,7 +20,6 @@ import { SpeedResult } from '../models';
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-buttons slot="start"><ion-menu-button></ion-menu-button></ion-buttons>
         <ion-title>History &amp; Map</ion-title>
         <ion-buttons slot="end">
           <ion-button (click)="export()"><ion-icon name="share-outline" slot="icon-only"></ion-icon></ion-button>
