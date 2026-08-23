@@ -1,0 +1,212 @@
+/* Ionic core */
+@import "@ionic/angular/css/core.css";
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+
+/* Follow the OS: warm cream in light, deep umber-charcoal in dark */
+@import "@ionic/angular/css/palettes/dark.system.css";
+
+/* ------------------------------------------------------------------
+   CellScope editorial theme
+   - warm off-whites / soft cream surfaces, charcoal ink
+   - terracotta rust accent (#D97757)
+   - serif display headings, clean sans body
+------------------------------------------------------------------ */
+
+:root {
+  --ion-background-color: #f6f1e8;
+  --ion-background-color-rgb: 246, 241, 232;
+  --ion-text-color: #2b2521;
+  --ion-text-color-rgb: 43, 37, 33;
+
+  --ion-toolbar-background: #f6f1e8;
+  --ion-tab-bar-background: #f3ede1;
+  --ion-item-background: #fbf7ef;
+  --ion-card-background: #fbf7ef;
+  --ion-border-color: rgba(43, 37, 33, 0.14);
+
+  --ion-color-primary: #c05f3c;
+  --ion-color-primary-rgb: 192, 95, 60;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #a95435;
+  --ion-color-primary-tint: #c67050;
+
+  --ion-color-medium: #8a7f72;
+  --ion-color-light: #efe8db;
+
+  --cs-accent: #d97757;
+  --cs-accent-soft: rgba(217, 119, 87, 0.13);
+  --cs-accent-fg: #a34e2e;
+
+  --cs-surface: #fbf7ef;
+  --cs-border: rgba(43, 37, 33, 0.12);
+  --cs-bar-track: rgba(43, 37, 33, 0.16);
+
+  --cs-ok: #4d7c4a;
+  --cs-ok-soft: rgba(77, 124, 74, 0.13);
+  --cs-ok-fg: #3c6339;
+  --cs-warn: #b3831f;
+  --cs-warn-soft: rgba(179, 131, 31, 0.14);
+  --cs-warn-fg: #7a5a12;
+  --cs-bad: #b64a33;
+  --cs-bad-soft: rgba(182, 74, 51, 0.12);
+  --cs-bad-fg: #93381f;
+  --cs-info: #c05f3c;
+  --cs-info-soft: rgba(192, 95, 60, 0.12);
+  --cs-info-fg: #a34e2e;
+
+  --cs-chart-text: #6b6257;
+  --cs-chart-grid: rgba(43, 37, 33, 0.1);
+  --cs-map-bg: #e8e2d4;
+
+  --font-serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ion-background-color: #171310;
+    --ion-background-color-rgb: 23, 19, 16;
+    --ion-text-color: #ece3d3;
+    --ion-text-color-rgb: 236, 227, 211;
+
+    --ion-toolbar-background: #14100d;
+    --ion-tab-bar-background: #14100d;
+    --ion-item-background: #201a15;
+    --ion-card-background: #201a15;
+    --ion-border-color: rgba(236, 227, 211, 0.14);
+
+    --ion-color-primary: #dd8663;
+    --ion-color-primary-rgb: 221, 134, 99;
+    --ion-color-primary-contrast: #241209;
+    --ion-color-primary-contrast-rgb: 36, 18, 9;
+    --ion-color-primary-shade: #c27657;
+    --ion-color-primary-tint: #e09273;
+
+    --ion-color-medium: #a2958a;
+    --ion-color-light: #2a231d;
+
+    --cs-accent: #d97757;
+    --cs-accent-soft: rgba(217, 119, 87, 0.16);
+    --cs-accent-fg: #eda27f;
+
+    --cs-surface: #201a15;
+    --cs-border: rgba(236, 227, 211, 0.12);
+    --cs-bar-track: rgba(236, 227, 211, 0.2);
+
+    --cs-ok: #8aa87a;
+    --cs-ok-soft: rgba(138, 168, 122, 0.14);
+    --cs-ok-fg: #a9c795;
+    --cs-warn: #d9a441;
+    --cs-warn-soft: rgba(217, 164, 65, 0.14);
+    --cs-warn-fg: #e0bc72;
+    --cs-bad: #e07856;
+    --cs-bad-soft: rgba(224, 120, 86, 0.14);
+    --cs-bad-fg: #eda28c;
+    --cs-info: #dd8663;
+    --cs-info-soft: rgba(221, 134, 99, 0.14);
+    --cs-info-fg: #eda27f;
+
+    --cs-chart-text: #b3a795;
+    --cs-chart-grid: rgba(236, 227, 211, 0.1);
+    --cs-map-bg: #241f19;
+  }
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, ion-title, .cs-serif {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+ion-title { font-size: 19px; }
+
+/* ---- shared layout helpers ---- */
+.cs-page {
+  padding: 14px 14px calc(24px + env(safe-area-inset-bottom));
+}
+.cs-card {
+  background: var(--cs-surface);
+  border: 1px solid var(--cs-border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.cs-card h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--ion-text-color);
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.cs-kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--cs-border);
+  font-size: 13.5px;
+}
+.cs-kv:last-child { border-bottom: none; }
+.cs-kv .k { color: var(--ion-color-medium); flex-shrink: 0; }
+.cs-kv .v {
+  text-align: right;
+  word-break: break-all;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.cs-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--cs-info-soft);
+  color: var(--cs-info-fg);
+  margin-right: 6px;
+}
+.cs-badge.ok { background: var(--cs-ok-soft); color: var(--cs-ok-fg); }
+.cs-badge.warn { background: var(--cs-warn-soft); color: var(--cs-warn-fg); }
+.cs-badge.bad { background: var(--cs-bad-soft); color: var(--cs-bad-fg); }
+.cs-badge.dev {
+  background: repeating-linear-gradient(45deg, rgba(217, 119, 87, 0.22) 0 8px, rgba(179, 131, 31, 0.22) 8px 16px);
+  color: var(--cs-warn-fg);
+  animation: devpulse 2s infinite;
+}
+@keyframes devpulse { 50% { opacity: 0.65; } }
+
+.cs-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 380px) { .cs-grid2 { grid-template-columns: 1fr; } }
+
+.cs-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.cs-dim { color: var(--ion-color-medium); font-size: 12px; }
+.cs-empty { text-align: center; color: var(--ion-color-medium); padding: 30px 10px; font-size: 13px; }
+
+ion-note[slot="error"] { color: var(--cs-bad-fg); }
+
+/* bottom tabs - quiet, fade until used */
+ion-tab-bar {
+  border-top: 1px solid var(--cs-border);
+  --background: var(--ion-tab-bar-background);
+  height: calc(58px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+ion-tab-button {
+  --color: var(--ion-color-medium);
+  --color-selected: var(--cs-accent-fg);
+  font-size: 11px;
+}

@@ -1,0 +1,47 @@
+{
+  "name": "cellscope",
+  "version": "1.0.0",
+  "description": "Offline-first cellular/network inspector: technologies, bands, frequencies, operators, MVNO, Starlink/NTN detection, pings, speed tests",
+  "private": true,
+  "scripts": {
+    "ng": "ng",
+    "test": "vitest run",
+    "build": "npm run prepare:map && ng build",
+    "watch": "ng build --watch --configuration development",
+    "prepare:map": "node -e \"require('fs').mkdirSync('src/assets/tiles',{recursive:true});console.log('tiles ok');\"",
+    "build:ipdb": "node tools/build-ipdb.mjs",
+    "scrape:spectrum": "node tools/scrape-spectrum.mjs",
+    "cap:add:android": "cap add android",
+    "cap:sync": "npm run build && cap sync",
+    "cap:open": "cap open android"
+  },
+  "dependencies": {
+    "@angular/common": "^19.2.0",
+    "@angular/compiler": "^19.2.0",
+    "@angular/core": "^19.2.0",
+    "@angular/forms": "^19.2.0",
+    "@angular/platform-browser": "^19.2.0",
+    "@angular/router": "^19.2.0",
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/browser": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/geolocation": "^7.0.0",
+    "@capacitor/preferences": "^7.0.0",
+    "@ionic/angular": "^8.6.0",
+    "chart.js": "^4.4.9",
+    "ionicons": "^8.0.0",
+    "rxjs": "~7.8.0",
+        "tslib": "^2.6.0",
+        "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^19.2.0",
+    "@angular/cli": "^19.2.0",
+    "@angular/compiler-cli": "^19.2.0",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0",
+        "typescript": "~5.8.2",
+    "vitest": "^4.1.11"
+  }
+}

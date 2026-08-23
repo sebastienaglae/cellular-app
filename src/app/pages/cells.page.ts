@@ -1,0 +1,139 @@
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import {
+  IonBadge, IonContent, IonHeader, IonItem, IonLabel, IonList,
+  IonMenuButton, IonNote, IonButtons, IonTitle, IonToolbar
+} from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { homeOutline } from 'ionicons/icons';
+import { NativeService, Snapshot } from '../services/native.service';
+import { StoreService } from '../services/store.service';
+import { CellRec } from '../models';
+import { SignalBarsComponent } from '../components/signal-bars.component';
+
+@Component({
+  selector: 'cs-cells',
+  standalone: true,
+  imports: [
+    SignalBarsComponent,
+    IonHeader, IonToolbar, IonTitle, IonButtons, IonMenuButton, IonContent,
+    IonList, IonItem, IonLabel, IonBadge, IonNote
+  ],
+  template: `
+    <ion-header>
+      <ion-toolbar>
+        <ion-buttons slot="start"><ion-menu-button></ion-menu-button></ion-buttons>
+        <ion-title>Cells ({{ cells().length }})</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content>
+      <div class="cs-page">
+        <div class="cs-dim" style="margin-bottom:8px;">
+          Serving + neighbor cells reported by the modem. Neighbors let you see what else is on air nearby.
+        </div>
+        @for (c of cells(); track c.timestamp + '' + c.pci + c.cid; let i = $index) {
+          <div class="cs-card cell-card">
+            <div class="head" (click)="toggle(i)">
+              <span class="tech">{{ c.tech }}</span>
+              <span class="band">{{ c.bandLabel || '?' }}</span>
+              @if (c.registered) { <ion-badge color="success">serving</ion-badge> }
+              <span style="flex:1"></span>
+              <cs-signal-bars [dbm]="c.dbm ?? c.rsrp"></cs-signal-bars>
+              <span class="chev">{{ open() === i ? '▾' : '▸' }}</span>
+            </div>
+            <div class="quick">
+              {{ c.freqDlMhz ? (c.freqDlMhz >= 1000 ? (c.freqDlMhz / 1000).toFixed(3) + ' GHz' : c.freqDlMhz.toFixed(1) + ' MHz') : 'freq n/a' }}
+              · ARFCN {{ c.arfcn ?? '?' }}
+              @if (c.rsrp != null) { · RSRP {{ c.rsrp }} dBm }
+            </div>
+            @if (open() === i) {
+              <div>
+                <div class="cs-kv"><span class="k">Technology</span><span class="v">{{ techLong(c.tech) }}</span></div>
+                <div class="cs-kv"><span class="k">Band</span><span class="v">{{ c.band != null ? (c.tech === 'NR' ? 'n' : 'B') + c.band : '—' }}@if (c.bands.length > 1) { ({{c.bands.join(', ')}}) }</span></div>
+                <div class="cs-kv"><span class="k">DL frequency</span><span class="v">{{ fmt(c.freqDlMhz) }}</span></div>
+                <div class="cs-kv"><span class="k">UL frequency</span><span class="v">{{ fmt(c.freqUlMhz) }}</span></div>
+                <div class="cs-kv"><span class="k">Channel (ARFCN)</span><span class="v cs-mono">{{ c.arfcn ?? '—' }}</span></div>
+                <div class="cs-kv"><span class="k">Bandwidth</span><span class="v">{{ c.bandwidthMhz != null ? c.bandwidthMhz + ' MHz' : '—' }}</span></div>
+                <div class="cs-kv"><span class="k">PCI / CID</span><span class="v cs-mono">{{ c.pci ?? '—' }} / {{ c.cid ?? '—' }}</span></div>
+                <div class="cs-kv"><span class="k">TAC / LAC</span><span class="v cs-mono">{{ c.tac ?? '—' }}</span></div>
+                <div class="cs-kv"><span class="k">PLMN</span><span class="v cs-mono">@if (c.mcc) { {{ c.mcc }}-{{ c.mnc }} } @else {—}</span></div>
+                <div class="cs-kv"><span class="k">RSRP / RSRQ</span><span class="v">{{ c.rsrp ?? '—' }} dBm / {{ c.rsrq ?? '—' }} dB</span></div>
+                <div class="cs-kv"><span class="k">RSSI / SINR</span><span class="v">{{ c.rssi ?? '—' }} dBm / {{ c.sinr ?? '—' }} dB</span></div>
+                @if (c.timingAdvance != null) { <div class="cs-kv"><span class="k">Timing advance</span><span class="v">{{ c.timingAdvance }}</span></div> }
+              </div>
+            }
+          </div>
+        } @empty {
+          <div class="cs-empty">
+            No cells reported yet.<br /><br />
+            On Android 10+ a location permission (and location services ON) is required to read cell info.
+          </div>
+        }
+      </div>
+    </ion-content>
+  `,
+  styles: [
+    `
+      .cell-card .head { display:flex; align-items:center; gap:8px; cursor:pointer; }
+      .cell-card .tech { font-weight:800; font-size:16px; min-width:52px; }
+      .cell-card .band { font-weight:700; color: var(--ion-color-primary); }
+      .cell-card .quick { font-size:12.5px; color:var(--ion-color-medium); margin-top:4px; }
+      .chev { color: var(--ion-color-medium); margin-left:6px; }
+    `
+  ]
+})
+export class CellsPage implements OnInit, OnDestroy {
+  snap = signal<Snapshot | null>(null);
+  open = signal(-1);
+  private timer?: number;
+
+  constructor(private native: NativeService, private store: StoreService) {
+    addIcons({ homeOutline });
+  }
+
+  ngOnInit(): void {
+    this.poll();
+    this.timer = window.setInterval(() => {
+      if (!document.hidden) this.poll();
+    }, this.store.settings.pollMs);
+  }
+  ngOnDestroy(): void {
+    if (this.timer) clearInterval(this.timer);
+  }
+
+  private async poll(): Promise<void> {
+    const s = await this.native.snapshot();
+    const sorted = [...s.cells].sort((a, b) => Number(b.registered) - Number(a.registered));
+    this.snap.set({ ...s, cells: sorted });
+  }
+
+  cells(): CellRec[] {
+    return this.snap()?.cells || [];
+  }
+
+  toggle(i: number): void {
+    this.open.set(this.open() === i ? -1 : i);
+  }
+
+  techLong(t: string): string {
+    if (t === 'NR') {
+      const mode = this.snap()?.service.nrMode;
+      return mode ? `5G NR (${mode === 'SA' ? 'Standalone' : 'Non-Standalone'})` : '5G NR';
+    }
+    return (
+      {
+        LTE: '4G LTE',
+        WCDMA: '3G UMTS/WCDMA',
+        GSM: '2G GSM/GPRS/EDGE',
+        CDMA: 'CDMA/EVDO',
+        TDSCDMA: 'TD-SCDMA',
+        IWLAN: 'IWLAN',
+        UNKNOWN: 'Unknown'
+      } as { [k: string]: string }
+    )[t] || t;
+  }
+
+  fmt(f: number | null): string {
+    if (f == null) return '—';
+    return f >= 1000 ? `${(f / 1000).toFixed(3)} GHz` : `${f.toFixed(1)} MHz`;
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "builtAt": "2026-08-23T13:12:33.099Z",
+  "source": "iptoasn.com (PDDL)",
+  "v4Ranges": 533367,
+  "v6Ranges": 182349,
+  "orgs": 86805,
+  "countries": 243,
+  "starlinkOrgCount": 11,
+  "starlinkAsns": [
+    14593,
+    152110,
+    45700,
+    49854,
+    27277,
+    34602,
+    25076,
+    50494,
+    212210,
+    153965,
+    204791
+  ]
+}

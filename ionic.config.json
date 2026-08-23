@@ -1,0 +1,7 @@
+{
+  "name": "cellscope",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
