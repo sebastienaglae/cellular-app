@@ -100,6 +100,8 @@ const FR: Record<string, string> = {
   'Band/freq engine': 'Moteur bandes/fréq.', 'bundled 3GPP tables (36.101 / 38.104)': 'tables 3GPP intégrées (36.101 / 38.104)',
   'Spectrum': 'Spectre', 'spectrum-tracker.com · bundled snapshot': 'spectrum-tracker.com · instantané intégré',
   'IP database': 'Base IP',
+  'you': 'vous',
+  'Apple restricts access to cell identifiers (PCI, TAC, CID) and neighbor cells. Technology, carrier and signal level are shown.': 'Apple interdit l’accès aux identifiants cellulaires (PCI, TAC, CID) et aux cellules voisines. Technologie, opérateur et niveau de signal sont affichés.',
   'Run the official Ookla test': 'Lancez le test Ookla officiel',
   'speedtest.net refuses to be embedded inside other apps (ERR_BLOCKED_BY_RESPONSE), so CellScope opens it in a secure in-app browser tab instead. Results stay between you and Ookla.':
     'speedtest.net refuse l’intégration dans les apps, CellScope l’ouvre donc dans un onglet sécurisé. Les résultats restent entre vous et Ookla.',
@@ -220,7 +222,8 @@ const JP: Record<string, string> = {
   'Starlink link detected': 'スターリンク接続を検出',
   'Possible satellite connection': '衛星接続の可能性',
   'Roaming': 'ローミング',
-  'Link': 'リンク'
+  'Link': 'リンク',
+  'Apple restricts access to cell identifiers (PCI, TAC, CID) and neighbor cells. Technology, carrier and signal level are shown.': 'Appleはセル識別子（PCI・TAC・CID）や隣接セルへのアクセスを制限しています。技術・キャリア・信号レベルを表示します。'
 };
 
 @Injectable({ providedIn: 'root' })

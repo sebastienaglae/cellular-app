@@ -51,16 +51,18 @@ An in-app explainer is shown once; already-granted permissions are never re-requ
 
 ## Build
 
-Requirements: Node 20+, JDK 21 (Gradle 8.11 refuses newer), Android SDK 35.
+Requirements: Node 20+, JDK 21 (Gradle 8.11 refuses newer), Android SDK 35. For iOS: macOS with Xcode 15+ and CocoaPods.
 
 ```bash
 npm install
 npm test              # 79 unit tests (73 TypeScript + 6 Java)
 npm run build         # web bundle + offline assets
-npx cap sync android
+npx cap sync android  # also: npx cap sync ios
 cd android && ./gradlew assembleDebug
 # APK: android/app/build/outputs/apk/debug/app-debug.apk
 ```
+
+iOS: open `ios/App/App.xcworkspace` on a Mac, run `pod install` inside `ios/App` once, then build from Xcode. The Swift plugin (`CellInfoPlugin.swift`) mirrors the Android API with Apple's constraints: iOS exposes the current radio technology (LTE / 5G NSA / 5G SA), carrier identity and Wi-Fi — but **not** neighbor cells, PCI, TAC, CID or bands; the UI explains this on-device. Ping uses an ICMP DGRAM socket (Apple SimplePing technique) and reports an explicit error if the device refuses it.
 
 Useful scripts:
 

@@ -7,6 +7,7 @@ import { addIcons } from 'ionicons';
 import { homeOutline } from 'ionicons/icons';
 import { NativeService, Snapshot } from '../services/native.service';
 import { StoreService } from '../services/store.service';
+import { I18nService } from '../services/i18n.service';
 import { CellRec } from '../models';
 import { SignalBarsComponent } from '../components/signal-bars.component';
 
@@ -22,14 +23,20 @@ import { SignalBarsComponent } from '../components/signal-bars.component';
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-title>Cells ({{ cells().length }})</ion-title>
+        <ion-title>{{ t('Cells') }} ({{ cells().length }})</ion-title>
       </ion-toolbar>
     </ion-header>
     <ion-content>
       <div class="cs-page">
         <div class="cs-dim" style="margin-bottom:8px;">
-          Serving + neighbor cells reported by the modem. Neighbors let you see what else is on air nearby.
+          {{ t('Serving + neighbor cells reported by the modem. Neighbors let you see what else is on air nearby.') }}
         </div>
+        @if (native.platform === 'ios') {
+          <div class="cs-card" style="border-color: var(--cs-accent);">
+            <h3>iOS</h3>
+            <div class="cs-dim">{{ t('Apple restricts access to cell identifiers (PCI, TAC, CID) and neighbor cells. Technology, carrier and signal level are shown.') }}</div>
+          </div>
+        }
         @for (c of cells(); track c.timestamp + '' + c.pci + c.cid; let i = $index) {
           <div class="cs-card cell-card">
             <div class="head" (click)="toggle(i)">
@@ -86,7 +93,9 @@ export class CellsPage implements OnInit, OnDestroy {
   open = signal(-1);
   private timer?: number;
 
-  constructor(private native: NativeService, private store: StoreService) {
+  t = (k: string, p?: Record<string, string | number>) => this.i18n.t(k, p);
+
+  constructor(public native: NativeService, private store: StoreService, public i18n: I18nService) {
     addIcons({ homeOutline });
   }
 

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { registerPlugin } from '@capacitor/core';
 import {
   CapsRec, CellRec, PingResult, Rat, ServiceRec, SimRec, WifiRec
@@ -34,6 +35,7 @@ interface CellInfoPluginApi {
     roaming: boolean | null; dataTechInt: number; voiceRegState: number | null;
     dataRegState: number | null; nrAvailable: boolean; endc: boolean;
     carrierAggregation: boolean; ntn: boolean; iwlanPreferred?: boolean | null;
+    nrModeHint?: 'SA' | 'NSA' | null;
     isManualSelection: boolean | null;
     emergencyOnly: boolean | null;
   }>;
@@ -123,6 +125,7 @@ export function isValidPingHost(host: string): boolean {
 @Injectable({ providedIn: 'root' })
 export class NativeService {
   devMode = false;
+  readonly platform = Capacitor.getPlatform();
 
   /** Seeded PRNG so dev-mode screenshots are stable across polls. */
   private rngState = 0x1337c0de;
@@ -173,6 +176,7 @@ export class NativeService {
             dataRegState: s.dataRegState,
             nrAvailable: s.nrAvailable,
             endc: s.endc,
+            nrModeHint: s.nrModeHint ?? null,
             carrierAggregation: s.carrierAggregation,
             ntn: s.ntn,
             iwlanPreferred: !!s.iwlanPreferred,
@@ -183,7 +187,7 @@ export class NativeService {
           operatorName: null, operatorNumeric: null, isoCountry: null, roaming: null,
           dataTech: 'UNKNOWN' as Rat, voiceRegState: null, dataRegState: null,
           nrAvailable: false, endc: false, carrierAggregation: false, ntn: false,
-          iwlanPreferred: false, isManualSelection: null, emergencyOnly: null
+          iwlanPreferred: false, nrModeHint: null, isManualSelection: null, emergencyOnly: null
         }
       ),
       this.safe(() => CellInfo.getSimInfo(), { sims: [] }),
@@ -194,8 +198,13 @@ export class NativeService {
     const cells = (cellRes.cells || []).map(mapRawCell);
     const hasNr = cells.some(c => c.tech === 'NR');
     let nrMode: 'SA' | 'NSA' | null = null;
-    if (hasNr && svcRes.dataTech === 'NR') nrMode = 'SA';
-    else if (hasNr) nrMode = 'NSA';
+    if (svcRes.nrModeHint) {
+      nrMode = svcRes.nrModeHint;
+    } else if (hasNr && svcRes.dataTech === 'NR') {
+      nrMode = 'SA';
+    } else if (hasNr) {
+      nrMode = 'NSA';
+    }
 
     const service: ServiceRec = { ...svcRes, nrMode };
     return { ts: Date.now(), fake: false, service, cells, sims: simRes.sims || [], wifi: wifiRes, caps: capsRes };
