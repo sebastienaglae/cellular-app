@@ -11,6 +11,7 @@ export const routes: Routes = [
   { path: 'ipinfo', loadComponent: () => import('./pages/ipinfo.page').then(m => m.IpInfoPage) },
   { path: 'ookla', loadComponent: () => import('./pages/ookla.page').then(m => m.OoklaPage) },
   { path: 'history', loadComponent: () => import('./pages/history.page').then(m => m.HistoryPage) },
+  { path: 'heatmap', loadComponent: () => import('./pages/heatmap.page').then(m => m.HeatmapPage) },
   { path: 'settings', loadComponent: () => import('./pages/settings.page').then(m => m.SettingsPage) },
   { path: 'more', loadComponent: () => import('./pages/more.page').then(m => m.MorePage) },
   { path: '**', redirectTo: 'dashboard' }

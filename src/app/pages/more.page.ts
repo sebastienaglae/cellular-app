@@ -6,10 +6,11 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  chevronForwardOutline, globeOutline, mapOutline, peopleCircleOutline,
+  chevronForwardOutline, flameOutline, globeOutline, mapOutline, peopleCircleOutline,
   pulseOutline, serverOutline, settingsOutline
 } from 'ionicons/icons';
 import { StoreService } from '../services/store.service';
+import { I18nService } from '../services/i18n.service';
 
 interface MoreLink {
   icon: string;
@@ -40,14 +41,14 @@ interface MoreLink {
         }
 
         @for (group of groups; track group.title) {
-          <div class="section">{{ group.title }}</div>
+          <div class="section">{{ i18n.t(group.title) }}</div>
           <ion-list lines="none" class="more-list">
             @for (l of group.links; track l.path) {
               <ion-item button routerLink="{{l.path}}" detail="false">
                 <div class="tile" slot="start"><ion-icon name="{{l.icon}}"></ion-icon></div>
                 <ion-label>
-                  <h2>{{ l.title }}</h2>
-                  <p>{{ l.sub }}</p>
+                  <h2>{{ i18n.t(l.title) }}</h2>
+                  <p>{{ i18n.t(l.sub) }}</p>
                 </ion-label>
                 <ion-icon class="chev" name="chevron-forward-outline" slot="end"></ion-icon>
               </ion-item>
@@ -83,25 +84,26 @@ export class MorePage {
     {
       title: 'Tools',
       links: [
-        { icon: 'people-circle-outline', title: 'Operators / MVNO', sub: 'Network, SIM & virtual-operator analysis', path: '/operators' },
-        { icon: 'server-outline', title: 'IP / ISP', sub: 'Who owns your IP — offline ASN database', path: '/ipinfo' },
-        { icon: 'pulse-outline', title: 'Ping', sub: 'Native ICMP latency & jitter', path: '/ping' },
-        { icon: 'globe-outline', title: 'Ookla Speedtest', sub: 'Open speedtest.net in a protected tab', path: '/ookla' }
+        { icon: 'people-circle-outline', title: 'Operators / MVNO', sub: 'more.ops.sub', path: '/operators' },
+        { icon: 'server-outline', title: 'IP / ISP', sub: 'more.ip.sub', path: '/ipinfo' },
+        { icon: 'pulse-outline', title: 'Ping', sub: 'more.ping.sub', path: '/ping' },
+        { icon: 'flame-outline', title: 'Heatmap', sub: 'more.heat.sub', path: '/heatmap' },
+        { icon: 'globe-outline', title: 'Ookla Speedtest', sub: 'more.ookla.sub', path: '/ookla' }
       ]
     },
     {
       title: 'Data',
       links: [
-        { icon: 'map-outline', title: 'History & Map', sub: 'Saved tests on the offline OSM map', path: '/history' },
-        { icon: 'settings-outline', title: 'Settings', sub: 'Dev mode, endpoints, permissions', path: '/settings' }
+        { icon: 'map-outline', title: 'History & Map', sub: 'more.hist.sub', path: '/history' },
+        { icon: 'settings-outline', title: 'Settings', sub: 'more.settings.sub', path: '/settings' }
       ]
     }
   ];
 
-  constructor(public store: StoreService) {
+  constructor(public store: StoreService, public i18n: I18nService) {
     addIcons({
       peopleCircleOutline, serverOutline, pulseOutline, globeOutline,
-      mapOutline, settingsOutline, chevronForwardOutline
+      mapOutline, settingsOutline, chevronForwardOutline, flameOutline
     });
   }
 }

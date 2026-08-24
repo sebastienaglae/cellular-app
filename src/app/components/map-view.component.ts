@@ -2,6 +2,13 @@ import {
   ChangeDetectionStrategy, Component, ElementRef, NgZone, input, OnChanges, OnInit, OnDestroy, viewChild
 } from '@angular/core';
 
+export interface HeatPoint {
+  lat: number;
+  lon: number;
+  color: string;
+  radius?: number;
+}
+
 export interface MapMarker {
   lat: number;
   lon: number;
@@ -29,6 +36,7 @@ export interface MapMarker {
 })
 export class MapViewComponent implements OnChanges, OnInit, OnDestroy {
   markers = input<MapMarker[]>([]);
+  heat = input<HeatPoint[]>([]);
   fitToMarkers = input<boolean>(true);
 
   private cv = viewChild.required<ElementRef<HTMLCanvasElement>>('cv');
@@ -258,6 +266,27 @@ export class MapViewComponent implements OnChanges, OnInit, OnDestroy {
         if (img) {
           ctx.drawImage(img, Math.floor(sx), Math.floor(sy), Math.ceil(tileScreen) + 1, Math.ceil(tileScreen) + 1);
         }
+      }
+    }
+
+    // heat blobs (drawn under markers, alpha-stacked)
+    const heat = this.heat();
+    if (heat.length) {
+      for (const hp of heat) {
+        if (!isFinite(hp.lat) || !isFinite(hp.lon)) continue;
+        const mx = this.lonToWorld(hp.lon, this.zf) - left;
+        const my = this.latToWorld(hp.lat, this.zf) - top;
+        if (mx < -40 || my < -40 || mx > w + 40 || my > h + 40) continue;
+        const r = hp.radius ?? 22;
+        const grad = ctx.createRadialGradient(mx, my, 0, mx, my, r);
+        grad.addColorStop(0, hp.color);
+        grad.addColorStop(1, 'transparent');
+        ctx.globalAlpha = 0.34;
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(mx, my, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
       }
     }
 

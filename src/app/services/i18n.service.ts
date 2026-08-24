@@ -4,7 +4,24 @@ export type Lang = 'en' | 'fr' | 'jp';
 
 /** French + Japanese translations keyed by the English source string. */
 const FR: Record<string, string> = {
+  'Recording…': 'Relevé en cours',
+  'No samples yet — record a survey while moving around': 'Aucun relevé',
+
   'Signal': 'Signal', 'Cells': 'Cellules', 'Bands': 'Bands', 'Speed': 'Vitesse', 'More': 'Plus',
+  'Heatmap': 'Carte de chaleur',
+  'Signal strength': 'Niveau de signal',
+  'Frequency bands': 'Bandes de fréquences',
+  'Record survey': 'Lancer le relevé',
+  'Recording': 'Relevé en cours',
+  'Clear': 'Effacer',
+  'Weak': 'Faible',
+  'Strong': 'Fort',
+  'No samples yet': 'Aucun relevé',
+  'samples': 'relevés',
+  'offline OSM basemap': 'fond OSM hors ligne',
+  'survey records every few metres while you move': 'relevé tous les quelques mètres pendant le déplacement',
+  'Heatmap cleared': 'Carte effacée',
+  'more.heat.sub': 'Relevé signal et fréquences sur la carte',
   'Tools': 'Outils', 'Data': 'Données',
   'Network, SIM & virtual-operator analysis': 'Réseau, SIM et analyse MVNO',
   'Who owns your IP — offline ASN database': 'À qui appartient votre IP — base ASN hors ligne',
@@ -59,7 +76,7 @@ const FR: Record<string, string> = {
   'Live': 'Live', 'Host / IP': 'Hôte / IP', 'Start live ping': 'Démarrer le ping live',
   'not running': 'arrêté', 'probes sent': 'sondes envoyées', 'AVG': 'MOY', 'JITTER': 'GIGUE',
   'ms · live session': 'ms · session live', 'Saved sessions': 'Sessions enregistrées',
-  'Clear': 'Effacer', 'No ping sessions yet — run one in the Live tab': 'Aucune session — lancez-en une dans Live',
+  'No ping sessions yet — run one in the Live tab': 'Aucune session — lancez-en une dans Live',
   'probes': 'sondes', 'Session saved — {n} probes to {host}': 'Session enregistrée — {n} sondes vers {host}',
   'Continuous 1-packet probes while running. Sessions are saved to History automatically.':
     'Sondes 1 paquet en continu. Sessions sauvegardées automatiquement.',
@@ -118,6 +135,7 @@ const FR: Record<string, string> = {
 };
 
 const JP: Record<string, string> = {
+
   'Signal': '信号', 'Cells': 'セル', 'Bands': 'バンド', 'Speed': '速度', 'More': 'その他',
   'Tools': 'ツール', 'Data': 'データ',
   'Network, SIM & virtual-operator analysis': 'ネットワーク・SIM・MVNO分析',
@@ -169,7 +187,7 @@ const JP: Record<string, string> = {
   'Live': 'ライブ', 'Host / IP': 'ホスト / IP', 'Start live ping': 'ライブping開始',
   'not running': '停止中', 'probes sent': 'プローブ送信', 'AVG': '平均', 'JITTER': 'ジッタ',
   'ms · live session': 'ms · ライブセッション', 'Saved sessions': '保存済みセッション',
-  'Clear': 'クリア', 'No ping sessions yet — run one in the Live tab': 'セッションなし — Liveタブで実行',
+  'No ping sessions yet — run one in the Live tab': 'セッションなし — Liveタブで実行',
   'probes': 'プローブ', 'Session saved — {n} probes to {host}': 'セッション保存 — {host}へ{n}プローブ',
   'Continuous 1-packet probes while running. Sessions are saved to History automatically.':
     '実行中は1パケットの連続プローブ。セッションは自動保存。',

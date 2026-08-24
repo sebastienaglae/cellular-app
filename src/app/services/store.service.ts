@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { BehaviorSubject } from 'rxjs';
 import { PingSession, SpeedResult } from '../models';
+import { HeatSample } from '../utils/heat';
 import { signal } from '@angular/core';
 import { BUNDLED_SPECTRUM, CountrySpectrum, mergeSpectrum, fetchFullSpectrum } from '../data/spectrum';
 
@@ -37,6 +38,7 @@ const K_SETTINGS = 'cs.settings.v1';
 const K_TESTS = 'cs.tests.v1';
 const K_PINGS = 'cs.pings.v1';
 const K_SPECTRUM = 'cs.spectrum.custom.v1';
+const K_HEAT = 'cs.heat.v1';
 
 @Injectable({ providedIn: 'root' })
 export class StoreService {
@@ -44,18 +46,21 @@ export class StoreService {
   isDev = false;
   private realTests: SpeedResult[] = [];
   private realPings: PingSession[] = [];
+  private realHeat: HeatSample[] = [];
   settings$ = new BehaviorSubject<AppSettings>({ ...DEFAULT_SETTINGS });
   tests$ = new BehaviorSubject<SpeedResult[]>([]);
   pings$ = new BehaviorSubject<PingSession[]>([]);
+  heat$ = new BehaviorSubject<HeatSample[]>([]);
   spectrumCustom$ = new BehaviorSubject<CountrySpectrum[]>([]);
   spectrumFull$ = new BehaviorSubject<CountrySpectrum[]>([]);
 
   async init(): Promise<void> {
-    const [s, t, p, sp] = await Promise.all([
+    const [s, t, p, sp, ht] = await Promise.all([
       Preferences.get({ key: K_SETTINGS }),
       Preferences.get({ key: K_TESTS }),
       Preferences.get({ key: K_PINGS }),
-      Preferences.get({ key: K_SPECTRUM })
+      Preferences.get({ key: K_SPECTRUM }),
+      Preferences.get({ key: K_HEAT })
     ]);
     if (s.value) {
       try {
@@ -75,6 +80,12 @@ export class StoreService {
     if (sp.value) {
       try {
         this.spectrumCustom$.next(JSON.parse(sp.value));
+      } catch {}
+    }
+    if (ht.value) {
+      try {
+        const parsedHeat = JSON.parse(ht.value);
+        this.heat$.next(Array.isArray(parsedHeat) ? parsedHeat : []);
       } catch {}
     }
     // full offline dataset (spectrum-tracker.com scrape) ships as an asset
@@ -149,6 +160,20 @@ export class StoreService {
     await this.safeSet(K_TESTS, '[]');
   }
 
+  async addHeat(samples: HeatSample | HeatSample[]): Promise<void> {
+    const add = Array.isArray(samples) ? samples : [samples];
+    const list = [...this.heat$.value, ...add].slice(-3000);
+    this.heat$.next(list);
+    if (this.isDev) return;
+    await this.safeSet(K_HEAT, JSON.stringify(list));
+  }
+
+  async clearHeat(): Promise<void> {
+    this.heat$.next([]);
+    if (this.isDev) return;
+    await this.safeSet(K_HEAT, '[]');
+  }
+
   async addPing(s: PingSession): Promise<void> {
     if (this.isDev) {
       this.pings$.next([...this.pings$.value, s].slice(-100));
@@ -173,6 +198,7 @@ export class StoreService {
     if (on) {
       this.realTests = this.tests$.value;
       this.realPings = this.pings$.value;
+      this.realHeat = this.heat$.value;
       const now = Date.now();
       const g = this.devGeo;
       this.tests$.next([
@@ -184,9 +210,31 @@ export class StoreService {
         { id: 'dp1', t: now - 2400e3, host: '1.1.1.1', sent: 25, avgMs: 36.6, minMs: 31.2, maxMs: 47.2, jitterMs: 3.4, lossPct: 0, times: [36, 34, 41] },
         { id: 'dp2', t: now - 600e3, host: '8.8.8.8', sent: 20, avgMs: 210.4, minMs: 198, maxMs: 260, jitterMs: 12.1, lossPct: 0, times: [210, 205, 260] }
       ]);
+
+      // synthetic signal survey: grid around the devGeo point with a weak spot
+      const bands = ['n78', 'B3', 'B1', 'B7', 'n28'];
+      const freqs: Record<string, number> = { n78: 3556, B3: 1850, B1: 2140.5, B7: 2680, n28: 763 };
+      const heat: HeatSample[] = [];
+      for (let gx = 0; gx < 9; gx++) {
+        for (let gy = 0; gy < 9; gy++) {
+          const dist = Math.hypot(gx - 4.2, gy - 4.6);
+          const dbm = Math.round(-62 - dist * 7 - (gx % 3) * 4);
+          const band = bands[(gx + gy) % bands.length];
+          heat.push({
+            lat: g.lat + (gy - 4) * 0.0022,
+            lon: g.lon + (gx - 4) * 0.0027,
+            dbm: Math.max(-118, dbm),
+            band,
+            tech: band.startsWith('n') ? 'NR' : 'LTE',
+            t: now - (gx * 9 + gy) * 1000
+          });
+        }
+      }
+      this.heat$.next(heat);
     } else {
       this.tests$.next(this.realTests);
       this.pings$.next(this.realPings);
+      this.heat$.next(this.realHeat);
     }
   }
 }
