@@ -26,21 +26,21 @@ describe('haversineKm', () => {
 
 describe('movementText', () => {
   it('returns null when either side is missing', () => {
-    expect(movementText(null, { lat: 0, lon: 0 })).toBeNull();
-    expect(movementText({ lat: 0, lon: 0 }, undefined)).toBeNull();
+    expect(movementText(null, { lat: 0, lon: 0 }).kind).toBeNull();
+    expect(movementText({ lat: 0, lon: 0 }, undefined).kind).toBeNull();
   });
 
   it('detects same spot under 50 m', () => {
     const a = { lat: 43.65, lon: 7.13 };
     const b = { lat: 43.6501, lon: 7.1301 };
-    expect(movementText(a, b)).toMatch(/same spot/i);
+    expect(movementText(a, b)).toEqual({ kind: 'same' });
   });
 
   it('formats metres and kilometres', () => {
     const a = { lat: 43.65, lon: 7.13 };
     const b = { lat: 43.66, lon: 7.13 }; // ~1.1 km north
-    expect(movementText(a, b)).toMatch(/km from previous/);
+    expect(movementText(a, b)).toEqual({ kind: 'km', n: 1.1 });
     const c = { lat: 43.6508, lon: 7.13 }; // ~89 m
-    expect(movementText(a, c)).toMatch(/m from previous/);
+    expect(movementText(a, c)).toEqual({ kind: 'm', n: 89 });
   });
 });

@@ -124,6 +124,20 @@ export function isValidPingHost(host: string): boolean {
 export class NativeService {
   devMode = false;
 
+  /** Seeded PRNG so dev-mode screenshots are stable across polls. */
+  private rngState = 0x1337c0de;
+  private rng(): number {
+    this.rngState = (this.rngState + 0x6d2b79f5) | 0;
+    let t = Math.imul(this.rngState ^ (this.rngState >>> 15), 1 | this.rngState);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  /** Synthetic GPS fix (Tokyo) used in dev mode. */
+  fakeGps(): { lat: number; lon: number; alt: number; speed: number; acc: number; head: number } {
+    return { lat: 35.6586, lon: 139.7454, alt: 40, speed: 0, acc: 8, head: 0 };
+  }
+
   private async safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
     try {
       return await fn();
@@ -202,19 +216,19 @@ export class NativeService {
   /* ------------------------- DEV MODE FAKE DATA ------------------------- */
 
   private rnd(min: number, max: number): number {
-    return min + Math.random() * (max - min);
+    return min + this.rng() * (max - min);
   }
   private ri(min: number, max: number): number {
     return Math.round(this.rnd(min, max));
   }
 
   private fakeSnapshot(): Snapshot {
-    const roll = Math.random();
-    const opNum = roll < 0.2 ? '310260' : ['26201', '23430', '20801', '40551', '50501'][this.ri(0, 4)];
+    const roll = this.rng();
+    const opNum = '44010'; // NTT Docomo JP - stable for screenshots
     const dataTech: Rat = roll < 0.55 ? 'NR' : roll < 0.85 ? 'LTE' : 'WCDMA';
-    const ntn = Math.random() < 0.25;
+    const ntn = this.rng() < 0.25;
 
-    const servingTech: Rat = ntn ? 'NR' : dataTech === 'NR' ? (Math.random() < 0.6 ? 'NR' : 'LTE') : dataTech;
+    const servingTech: Rat = ntn ? 'NR' : dataTech === 'NR' ? (this.rng() < 0.6 ? 'NR' : 'LTE') : dataTech;
 
     const mkArfcn = (t: Rat): number => {
       if (t === 'NR') return [633984, 646669, 429890, 512910, 364000][this.ri(0, 4)];
@@ -243,7 +257,7 @@ export class NativeService {
     };
 
     const neighbors: CellRec[] = Array.from({ length: this.ri(2, 7) }).map((_, i) => {
-      const t: Rat = Math.random() < 0.75 ? servingTech : Math.random() < 0.5 ? 'LTE' : 'NR';
+      const t: Rat = this.rng() < 0.75 ? servingTech : this.rng() < 0.5 ? 'LTE' : 'NR';
       return {
         tech: t,
         registered: false,
@@ -265,14 +279,14 @@ export class NativeService {
     });
 
     const wifi: WifiRec = {
-      ssid: Math.random() < 0.3 ? 'STARLINK-AB12' : `HomeNet-${this.ri(1000, 9999)}`,
+      ssid: 'STARLINK-AB12',
       bssid: 'f0:9f:c2:' + [this.ri(16, 255), this.ri(16, 255), this.ri(16, 255)]
         .map(v => v.toString(16).padStart(2, '0')).join(':'),
       frequencyMhz: [2412, 2437, 5180, 5500, 5220][this.ri(0, 4)],
       channelWidthMhz: 80,
       linkSpeedMbps: this.ri(120, 1200),
       rssi: -Math.round(this.rnd(38, 78)),
-      ipAddress: `192.168.1.${this.ri(2, 250)}`,
+      ipAddress: '192.168.43.12',
       gatewayIp: '192.168.1.1',
       standardGuess: null,
       bandLabel: null
@@ -291,9 +305,9 @@ export class NativeService {
     };
 
     const service: ServiceRec = {
-      operatorName: ntn ? 'T-Mobile Starlink' : ['Telekom DE', 'EE', 'Orange FR', 'Jio IN', 'Telstra AU'][this.ri(0, 4)],
+      operatorName: ntn ? 'T-Mobile Starlink' : 'NTT Docomo',
       operatorNumeric: opNum,
-      isoCountry: opNum.startsWith('310') ? 'us' : opNum.startsWith('262') ? 'de' : opNum.startsWith('234') ? 'gb' : opNum.startsWith('208') ? 'fr' : opNum.startsWith('405') ? 'in' : 'au',
+      isoCountry: 'jp',
       roaming: false,
       dataTech,
       voiceRegState: 0,
@@ -301,9 +315,9 @@ export class NativeService {
       nrMode: hasFakeNr([serving, ...neighbors], dataTech),
       nrAvailable: true,
       endc: dataTech === 'LTE' && [serving, ...neighbors].some(c => c.tech === 'NR'),
-      carrierAggregation: Math.random() < 0.4,
+      carrierAggregation: this.rng() < 0.4,
       ntn,
-      iwlanPreferred: Math.random() < 0.35,
+      iwlanPreferred: this.rng() < 0.35,
       isManualSelection: false,
       emergencyOnly: false
     };

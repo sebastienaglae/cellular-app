@@ -16,6 +16,7 @@ import { StoreService } from '../services/store.service';
 import { NativeService } from '../services/native.service';
 import { SpeedResult } from '../models';
 import { FlagComponent } from '../components/flag.component';
+import { I18nService } from '../services/i18n.service';
 
 @Component({
   selector: 'cs-speed',
@@ -155,10 +156,13 @@ export class SpeedPage implements OnInit, OnDestroy {
   private constantTimer?: number;
   private cv = viewChild.required<ElementRef<HTMLCanvasElement>>('chart');
 
+  t = (k: string, p?: Record<string, string | number>) => this.i18n.t(k, p);
+
   constructor(
     public speed: SpeedService,
     public store: StoreService,
     public native: NativeService,
+    public i18n: I18nService,
     private toast: ToastController
   ) {
     addIcons({ playOutline, stopOutline, timerOutline });
@@ -193,9 +197,14 @@ export class SpeedPage implements OnInit, OnDestroy {
   movedText(l: SpeedResult): string | null {
     const tests = this.store.tests$.value;
     const idx = tests.findIndex(x => x.id === l.id);
-    if (idx <= 0) return null;
+    if (idx <= 0) return this.t('geo.start');
     const prev = tests[idx - 1];
-    return movementText(prev.geo, l.geo);
+    const mv = movementText(prev.geo, l.geo);
+    if (!mv.kind) return null;
+    if (mv.kind === 'same') return this.t('geo.same');
+    if (mv.kind === 'm') return this.t('geo.m', { n: mv.n });
+    if (mv.kind === 'km') return this.t('geo.km', { n: mv.n });
+    return null;
   }
 
   async run(quick: boolean): Promise<void> {
@@ -205,7 +214,7 @@ export class SpeedPage implements OnInit, OnDestroy {
       const peak = 120 + Math.random() * 300;
       this.peak.set(nicePeak(peak));
       for (const ph of ['DOWNLOAD', 'UPLOAD'] as const) {
-        this.phase.set(ph);
+        this.phase.set(ph === 'DOWNLOAD' ? this.t('DOWN') : this.t('UP'));
         v = 0;
         for (let i = 0; i < 22; i++) {
           await new Promise(r => setTimeout(r, 80));
@@ -236,7 +245,7 @@ export class SpeedPage implements OnInit, OnDestroy {
       const res = await this.speed.runFull({
         quick,
         onProgress: (phase, mbps) => {
-          this.phase.set(phase.toUpperCase());
+          this.phase.set(phase === 'latency' ? this.t('Latency') : phase === 'download' ? this.t('DOWN') : phase === 'upload' ? this.t('UP') : this.t('Saved'));
           this.liveMbps.set(mbps);
           if (mbps > 0) {
             this.peak.set(Math.max(this.peak(), nicePeak(mbps)));
@@ -245,10 +254,10 @@ export class SpeedPage implements OnInit, OnDestroy {
       });
       if (res) {
         this.last.set(res);
-        this.toastMsg(`Saved ${res.dlMbps?.toFixed(1)} Mbps down`);
+        this.toastMsg(`${this.t('Saved')} — ${res.dlMbps?.toFixed(1)} Mbps`);
         this.buildChart();
       } else {
-        this.toastMsg('Test failed — check connectivity and endpoint URL');
+        this.toastMsg(this.t('Test failed — check connectivity and endpoint URL'));
       }
     } finally {
       this.running.set(false);
@@ -262,7 +271,7 @@ export class SpeedPage implements OnInit, OnDestroy {
     if (on) {
       this.startConstantTimer();
       this.run(false);
-      this.toastMsg(`Continuous testing every ${this.store.settings.constantTestMin} min`);
+      this.toastMsg(this.t('every {n} min, geo-tagged, saved on device', { n: this.store.settings.constantTestMin }));
     } else {
       this.stopConstantTimer();
     }

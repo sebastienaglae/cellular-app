@@ -11,6 +11,7 @@ import { MapViewComponent, MapMarker } from '../components/map-view.component';
 import { SpeedResult } from '../models';
 import { movementText } from '../utils/geo';
 import { colorForMbps } from '../utils/view';
+import { I18nService } from '../services/i18n.service';
 
 @Component({
   selector: 'cs-history',
@@ -25,7 +26,7 @@ import { colorForMbps } from '../utils/view';
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-title>History</ion-title>
+        <ion-title>{{ t('History') }}</ion-title>
         <ion-buttons slot="end">
           @if (tab() === 'list' && tests().length) {
             <ion-button (click)="clear()"><ion-icon name="trash-outline" slot="icon-only"></ion-icon></ion-button>
@@ -36,8 +37,8 @@ import { colorForMbps } from '../utils/view';
     <ion-content>
       <div class="cs-page">
         <ion-segment [value]="tab()" (ionChange)="tab.set($any($event.detail.value))" class="seg">
-          <ion-segment-button value="list"><ion-label>Tests</ion-label></ion-segment-button>
-          <ion-segment-button value="map"><ion-label>Map</ion-label></ion-segment-button>
+          <ion-segment-button value="list"><ion-label>{{ t('Tests') }}</ion-label></ion-segment-button>
+          <ion-segment-button value="map"><ion-label>{{ t('Map') }}</ion-label></ion-segment-button>
         </ion-segment>
 
         @if (tab() === 'map') {
@@ -48,34 +49,34 @@ import { colorForMbps } from '../utils/view';
             }
           </div>
           <div class="cs-dim" style="text-align:center; margin-top:8px;">
-            {{ markers().length }} locations · offline OSM basemap · pinch to zoom
+            {{ markers().length }} · {{ t('locations · offline OSM basemap · pinch to zoom') }}
           </div>
         } @else {
           <ion-list lines="none" class="test-list">
-            @for (t of tests().slice().reverse(); track t.id; let i = $index) {
+            @for (r of tests().slice().reverse(); track r.id; let i = $index) {
               <div class="test">
                 <div class="test-head">
-                  <span class="dot" [style.background]="colorOf(t)"></span>
-                  <b class="dl">{{ t.dlMbps?.toFixed(1) ?? '—' }}</b>
+                  <span class="dot" [style.background]="colorOf(r)"></span>
+                  <b class="dl">{{ r.dlMbps?.toFixed(1) ?? '—' }}</b>
                   <span class="mbps">Mbps</span>
-                  @if (t.ulMbps != null) { <span class="up">{{ t.ulMbps.toFixed(1) }} up</span> }
-                  @if (t.fake) { <span class="cs-badge dev" style="margin-left:auto;">FAKE</span> }
+                  @if (r.ulMbps != null) { <span class="up">{{ r.ulMbps.toFixed(1) }} up</span> }
+                  @if (r.fake) { <span class="cs-badge dev" style="margin-left:auto;">FAKE</span> }
                 </div>
                 <div class="test-meta">
-                  {{ dateOf(t.t) }} · {{ t.tech || '?' }} · {{ t.operator || '?' }}
+                  {{ dateOf(r.t) }} · {{ r.tech || '?' }} · {{ r.operator || '?' }}
                 </div>
-                @if (t.geo) {
+                @if (r.geo) {
                   <div class="test-meta cs-mono">
-                    {{ t.geo.lat.toFixed(4) }}, {{ t.geo.lon.toFixed(4) }}
-                    @if (movedText(t); as mv) { · {{ mv }} }
+                    {{ r.geo.lat.toFixed(4) }}, {{ r.geo.lon.toFixed(4) }}
+                    @if (movedText(r); as mv) { · {{ mv }} }
                   </div>
                 }
-                @if (t.latencyMs != null) {
-                  <div class="test-meta">{{ t.latencyMs.toFixed(0) }} ms latency</div>
+                @if (r.latencyMs != null) {
+                  <div class="test-meta">{{ r.latencyMs.toFixed(0) }} ms {{ t('latency') }}</div>
                 }
               </div>
             } @empty {
-              <div class="cs-empty">Run a speed test to start building history</div>
+              <div class="cs-empty">{{ t('Run a speed test to start building history') }}</div>
             }
           </ion-list>
         }
@@ -107,7 +108,9 @@ export class HistoryPage implements OnInit {
   tests = signal<SpeedResult[]>([]);
   markers = signal<MapMarker[]>([]);
 
-  constructor(public store: StoreService, private toast: ToastController) {
+  t = (k: string, p?: Record<string, string | number>) => this.i18n.t(k, p);
+
+  constructor(public store: StoreService, public i18n: I18nService, private toast: ToastController) {
     addIcons({ trashOutline });
   }
 
@@ -134,16 +137,21 @@ export class HistoryPage implements OnInit {
   movedText(t: SpeedResult): string | null {
     const tests = this.store.tests$.value;
     const idx = tests.findIndex(x => x.id === t.id);
-    if (idx <= 0) return 'start point';
+    if (idx <= 0) return this.t('geo.start');
     const prev = tests[idx - 1];
-    return movementText(prev.geo, t.geo);
+    const mv = movementText(prev.geo, t.geo);
+    if (!mv.kind) return null;
+    if (mv.kind === 'same') return this.t('geo.same');
+    if (mv.kind === 'm') return this.t('geo.m', { n: mv.n });
+    if (mv.kind === 'km') return this.t('geo.km', { n: mv.n });
+    return null;
   }
 
   async clear(): Promise<void> {
     await this.store.clearTests();
     this.reload();
-    const t = await this.toast.create({ message: 'History cleared', duration: 1800, position: 'bottom' });
-    await t.present();
+    const tt = await this.toast.create({ message: this.t('History cleared'), duration: 1800, position: 'bottom' });
+    await tt.present();
   }
 
   dateOf(t: number): string {

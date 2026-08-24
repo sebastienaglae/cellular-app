@@ -10,15 +10,19 @@ export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
-/** Human summary of movement between two test locations. */
+export type Movement =
+  | { kind: 'start' | 'same' | null }
+  | { kind: 'm' | 'km'; n: number };
+
+/** Structured movement between two test locations (translate via geo.* i18n keys). */
 export function movementText(
   prev: { lat: number; lon: number } | null | undefined,
   cur: { lat: number; lon: number } | null | undefined
-): string | null {
-  if (!prev || !cur) return null;
+): Movement {
+  if (!prev || !cur) return { kind: null };
   const km = haversineKm(prev.lat, prev.lon, cur.lat, cur.lon);
-  if (!Number.isFinite(km)) return null;
-  if (km < 0.05) return 'same spot as previous';
-  if (km < 1) return `${(km * 1000).toFixed(0)} m from previous`;
-  return `${km.toFixed(1)} km from previous`;
+  if (!Number.isFinite(km)) return { kind: null };
+  if (km < 0.05) return { kind: 'same' };
+  if (km < 1) return { kind: 'm', n: Math.round(km * 1000) };
+  return { kind: 'km', n: Number(km.toFixed(1)) };
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { BehaviorSubject } from 'rxjs';
 import { PingSession, SpeedResult } from '../models';
+import { signal } from '@angular/core';
 import { BUNDLED_SPECTRUM, CountrySpectrum, mergeSpectrum, fetchFullSpectrum } from '../data/spectrum';
 
 export interface AppSettings {
@@ -15,6 +16,7 @@ export interface AppSettings {
   countryOverride: string;
   saveGeoWithTests: boolean;
   permsAsked: boolean;
+  lang: '';
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -27,7 +29,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   ooklaUrl: 'https://www.speedtest.net',
   countryOverride: '',
   saveGeoWithTests: true,
-  permsAsked: false
+  permsAsked: false,
+  lang: '' as const
 };
 
 const K_SETTINGS = 'cs.settings.v1';
@@ -37,6 +40,10 @@ const K_SPECTRUM = 'cs.spectrum.custom.v1';
 
 @Injectable({ providedIn: 'root' })
 export class StoreService {
+  /** When dev mode is on, history/pings shown & added are synthetic (real data untouched on disk). */
+  isDev = false;
+  private realTests: SpeedResult[] = [];
+  private realPings: PingSession[] = [];
   settings$ = new BehaviorSubject<AppSettings>({ ...DEFAULT_SETTINGS });
   tests$ = new BehaviorSubject<SpeedResult[]>([]);
   pings$ = new BehaviorSubject<PingSession[]>([]);
@@ -128,6 +135,10 @@ export class StoreService {
   }
 
   async addTest(r: SpeedResult): Promise<void> {
+    if (this.isDev) {
+      this.tests$.next([...this.tests$.value, r].slice(-500));
+      return;
+    }
     const list = [...this.tests$.value, r].slice(-500);
     this.tests$.next(list);
     await this.safeSet(K_TESTS, JSON.stringify(list));
@@ -139,6 +150,10 @@ export class StoreService {
   }
 
   async addPing(s: PingSession): Promise<void> {
+    if (this.isDev) {
+      this.pings$.next([...this.pings$.value, s].slice(-100));
+      return;
+    }
     const list = [...this.pings$.value, s].slice(-100);
     this.pings$.next(list);
     await this.safeSet(K_PINGS, JSON.stringify(list));
@@ -147,6 +162,32 @@ export class StoreService {
   async clearPings(): Promise<void> {
     this.pings$.next([]);
     await this.safeSet(K_PINGS, '[]');
+  }
+
+  /** Tokyo-based synthetic dataset for dev mode / screenshots. Real data untouched. */
+  readonly devGeo = { lat: 35.6586, lon: 139.7454 };
+
+  setDevMode(on: boolean): void {
+    if (on === this.isDev) return;
+    this.isDev = on;
+    if (on) {
+      this.realTests = this.tests$.value;
+      this.realPings = this.pings$.value;
+      const now = Date.now();
+      const g = this.devGeo;
+      this.tests$.next([
+        { id: 'd1', t: now - 3600e3, dlMbps: 284.2, ulMbps: 42.1, latencyMs: 18, jitterMs: 2.1, serverUrl: 'dev', geo: { lat: g.lat, lon: g.lon, acc: 12 }, tech: '5G-SA', operator: 'NTT Docomo', fake: true },
+        { id: 'd2', t: now - 1800e3, dlMbps: 86.4, ulMbps: 23.8, latencyMs: 31, jitterMs: 4.4, serverUrl: 'dev', geo: { lat: g.lat + 0.010, lon: g.lon - 0.014, acc: 18 }, tech: 'LTE', operator: 'Rakuten', fake: true },
+        { id: 'd3', t: now - 300e3, dlMbps: 412.9, ulMbps: 55.2, latencyMs: 14, jitterMs: 1.8, serverUrl: 'dev', geo: { lat: g.lat - 0.018, lon: g.lon + 0.031, acc: 9 }, tech: '5G-SA', operator: 'NTT Docomo', fake: true }
+      ]);
+      this.pings$.next([
+        { id: 'dp1', t: now - 2400e3, host: '1.1.1.1', sent: 25, avgMs: 36.6, minMs: 31.2, maxMs: 47.2, jitterMs: 3.4, lossPct: 0, times: [36, 34, 41] },
+        { id: 'dp2', t: now - 600e3, host: '8.8.8.8', sent: 20, avgMs: 210.4, minMs: 198, maxMs: 260, jitterMs: 12.1, lossPct: 0, times: [210, 205, 260] }
+      ]);
+    } else {
+      this.tests$.next(this.realTests);
+      this.pings$.next(this.realPings);
+    }
   }
 }
 
