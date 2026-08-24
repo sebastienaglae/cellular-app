@@ -8,6 +8,7 @@ import { addIcons } from 'ionicons';
 import { cloudOutline, downloadOutline, planetOutline, searchOutline } from 'ionicons/icons';
 import { IpInfoService, IpInfo } from '../services/ipinfo.service';
 import { NativeService } from '../services/native.service';
+import { FlagComponent } from '../components/flag.component';
 
 interface LookupRow {
   ip: string;
@@ -19,7 +20,7 @@ interface LookupRow {
   selector: 'cs-ipinfo',
   standalone: true,
   imports: [
-    FormsModule,
+    FormsModule, FlagComponent,
     IonHeader, IonToolbar, IonTitle, IonButtons, IonMenuButton, IonContent,
     IonButton, IonIcon, IonNote, IonItem, IonInput, IonBadge, IonLabel
   ],
@@ -47,11 +48,15 @@ interface LookupRow {
 
         @if (svc.loaded()) {
           <div class="cs-card">
-            <h3><ion-icon name="cloud-outline"></ion-icon> Your connection</h3>
-            <ion-button size="small" fill="outline" (click)="checkPublic()" [disabled]="checking()">
-              {{ checking() ? 'Checking…' : 'Detect public IP' }}
-            </ion-button>
-            <div class="cs-dim" style="margin-top:4px;">Needs internet - lookup itself is fully offline.</div>
+            <h3>Your connection</h3>
+            @if (checking()) {
+              <div class="cs-dim">Detecting public IP…</div>
+            } @else if (!publicDetected()) {
+              <div class="cs-dim">Offline — public IP unavailable right now.</div>
+            }
+            <div class="cs-dim" style="margin-top:4px;">
+              Detection needs internet; the lookup itself is fully offline.
+            </div>
           </div>
 
           <div class="cs-card">
@@ -69,14 +74,20 @@ interface LookupRow {
               <h3>{{ row.label }}</h3>
               <div class="ip-line">{{ row.ip }}</div>
               @if (row.info; as i) {
-                <div class="cs-kv"><span class="k">Organisation</span><span class="v">{{ i.org }}</span></div>
+                <div class="cs-kv">
+                  <span class="k">Organisation</span>
+                  <span class="v org">
+                    @if (i.cc && i.cc.length === 2 && i.cc !== '--') { <cs-flag [iso]="i.cc" [size]="20"></cs-flag> }
+                    {{ i.org }}
+                  </span>
+                </div>
                 <div class="cs-kv"><span class="k">ASN</span><span class="v">{{ i.asn != null ? 'AS' + i.asn : '—' }}</span></div>
                 <div class="cs-kv"><span class="k">Country</span><span class="v">{{ i.cc }}</span></div>
                 @if (i.starlink) {
-                  <div style="margin-top:8px;"><span class="cs-badge ok">★ STARLINK RANGE (AS14593)</span></div>
+                  <div style="margin-top:8px;"><span class="cs-badge ok">STARLINK RANGE — AS14593</span></div>
                 }
               } @else {
-                <div class="cs-empty">No match in database (private/reserved range?)</div>
+                <div class="cs-empty">No match in database (private or reserved range)</div>
               }
             </div>
           }
@@ -103,6 +114,7 @@ interface LookupRow {
   styles: [
     `
       .ip-line { font-size:18px; font-weight:700; font-family: ui-monospace, Menlo, Consolas, monospace; margin-bottom:6px; word-break:break-all; }
+      .org { display:inline-flex; align-items:center; gap:8px; }
       .range { font-size:12px; padding:4px 0; border-bottom:1px dashed rgba(148,163,184,.2); color:#cfd6e4; }
       .foot { display:block; text-align:center; font-size:11px; margin-top:10px; }
     `
@@ -111,6 +123,7 @@ interface LookupRow {
 export class IpInfoPage implements OnInit {
   rows = signal<LookupRow[]>([]);
   checking = signal(false);
+  publicDetected = signal(false);
   starlinkRanges = signal<string[]>([]);
   manualIp = '';
 
@@ -124,7 +137,8 @@ export class IpInfoPage implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.load();
-    if (this.svc.isLoaded) {
+    if (this.svc.loaded()) {
+      this.starlinkRanges.set(this.svc.starlinkRanges(15));
       this.checkPublic();
     }
   }
@@ -148,8 +162,8 @@ export class IpInfoPage implements OnInit {
     this.checking.set(true);
     try {
       const ip = await this.svc.publicIp();
+      this.publicDetected.set(!!ip);
       if (ip) this.lookup(ip, 'Public');
-      else this.toastMsg('Could not detect public IP (offline?)');
     } finally {
       this.checking.set(false);
     }

@@ -1,88 +1,112 @@
 import { Component, OnInit, signal } from '@angular/core';
 import {
   IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem,
-  IonLabel, IonList, IonMenuButton, IonNote, IonTitle, IonToolbar, ToastController
+  IonLabel, IonList, IonSegment, IonSegmentButton, IonTitle, IonToolbar,
+  ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { downloadOutline, trashOutline, shareOutline } from 'ionicons/icons';
-import { StoreService, HistoryFile } from '../services/store.service';
+import { trashOutline } from 'ionicons/icons';
+import { StoreService } from '../services/store.service';
 import { MapViewComponent, MapMarker } from '../components/map-view.component';
 import { SpeedResult } from '../models';
+import { haversineKm } from './speed.page';
 
 @Component({
   selector: 'cs-history',
   standalone: true,
   imports: [
     MapViewComponent,
-    IonHeader, IonToolbar, IonTitle, IonButtons, IonMenuButton, IonContent,
-    IonList, IonItem, IonLabel, IonButton, IonIcon, IonNote
+    IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
+    IonSegment, IonSegmentButton, IonList, IonItem, IonLabel,
+    IonButton, IonIcon
   ],
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-title>History &amp; Map</ion-title>
+        <ion-title>History</ion-title>
         <ion-buttons slot="end">
-          <ion-button (click)="export()"><ion-icon name="share-outline" slot="icon-only"></ion-icon></ion-button>
-          <ion-button (click)="clear()"><ion-icon name="trash-outline" slot="icon-only"></ion-icon></ion-button>
+          @if (tab() === 'list' && tests().length) {
+            <ion-button (click)="clear()"><ion-icon name="trash-outline" slot="icon-only"></ion-icon></ion-button>
+          }
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
     <ion-content>
       <div class="cs-page">
-        <div class="cs-card">
-          <h3>Test locations (offline map)</h3>
-          <cs-map style="height:260px; display:block;" [markers]="markers()" />
-          @if (!markers().length) {
-            <div class="cs-empty">No geo-tagged tests yet</div>
-          }
-        </div>
+        <ion-segment [value]="tab()" (ionChange)="tab.set($any($event.detail.value))" class="seg">
+          <ion-segment-button value="list"><ion-label>Tests</ion-label></ion-segment-button>
+          <ion-segment-button value="map"><ion-label>Map</ion-label></ion-segment-button>
+        </ion-segment>
 
-        <div class="cs-card">
-          <h3>Saved tests ({{ tests().length }})</h3>
-          <ion-list lines="none" style="background:transparent;">
-            @for (t of tests().slice().reverse(); track t.id) {
-              <ion-item>
-                <div slot="start" class="dot" [style.background]="colorOf(t)"></div>
-                <ion-label>
-                  <h2 style="font-size:15px;">
-                    {{ t.dlMbps?.toFixed(1) ?? '—' }} ↓ / {{ t.ulMbps?.toFixed(1) ?? '—' }} ↑ Mbps
-                    @if (t.fake) { <span class="cs-badge dev" style="margin-left:6px;">FAKE</span> }
-                  </h2>
-                  <p style="font-size:12px;">
-                    {{ dateOf(t.t) }} · {{ t.tech || '?' }} · {{ t.operator || '?' }}
-                    @if (t.geo) { · 📍 {{ t.geo.lat.toFixed(4) }}, {{ t.geo.lon.toFixed(4) }} }
-                  </p>
-                </ion-label>
-              </ion-item>
+        @if (tab() === 'map') {
+          <div class="bigmap">
+            <cs-map style="height: 100%; display: block;" [markers]="markers()" />
+            @if (!markers().length) {
+              <div class="map-empty cs-empty">No geo-tagged tests yet</div>
+            }
+          </div>
+          <div class="cs-dim" style="text-align:center; margin-top:8px;">
+            {{ markers().length }} locations · offline OSM basemap · pinch to zoom
+          </div>
+        } @else {
+          <ion-list lines="none" class="test-list">
+            @for (t of tests().slice().reverse(); track t.id; let i = $index) {
+              <div class="test">
+                <div class="test-head">
+                  <span class="dot" [style.background]="colorOf(t)"></span>
+                  <b class="dl">{{ t.dlMbps?.toFixed(1) ?? '—' }}</b>
+                  <span class="mbps">Mbps</span>
+                  @if (t.ulMbps != null) { <span class="up">{{ t.ulMbps.toFixed(1) }} up</span> }
+                  @if (t.fake) { <span class="cs-badge dev" style="margin-left:auto;">FAKE</span> }
+                </div>
+                <div class="test-meta">
+                  {{ dateOf(t.t) }} · {{ t.tech || '?' }} · {{ t.operator || '?' }}
+                </div>
+                @if (t.geo) {
+                  <div class="test-meta cs-mono">
+                    {{ t.geo.lat.toFixed(4) }}, {{ t.geo.lon.toFixed(4) }}
+                    @if (movedText(t); as mv) { · {{ mv }} }
+                  </div>
+                }
+                @if (t.latencyMs != null) {
+                  <div class="test-meta">{{ t.latencyMs.toFixed(0) }} ms latency</div>
+                }
+              </div>
             } @empty {
               <div class="cs-empty">Run a speed test to start building history</div>
             }
           </ion-list>
-
-          <input #fileInput type="file" accept="application/json,.json" hidden (change)="importFile($event)" />
-          <ion-button fill="outline" size="small" expand="block" (click)="fileInput.click()">
-            <ion-icon slot="start" name="download-outline"></ion-icon> Import export file
-          </ion-button>
-        </div>
-
-        <ion-note style="font-size:11px; display:block; text-align:center;">
-          Everything is stored locally on the device. Export produces a portable JSON backup.
-        </ion-note>
+        }
       </div>
     </ion-content>
   `,
   styles: [
     `
-      .dot { width:14px; height:14px; border-radius:50%; }
+      .seg { margin-bottom: 12px; --background: var(--cs-surface); border-radius: 12px; }
+      .bigmap { height: calc(100vh - 230px); min-height: 420px; border-radius: 16px; overflow: hidden;
+                border: 1px solid var(--cs-border); position: relative; }
+      .map-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+                   background: var(--cs-surface); z-index: 5; }
+      .test-list { background: transparent; padding: 0; }
+      .test { background: var(--cs-surface); border: 1px solid var(--cs-border); border-radius: 14px;
+              padding: 12px 14px; margin-bottom: 10px; }
+      .test-head { display: flex; align-items: baseline; gap: 7px; }
+      .dot { width: 10px; height: 10px; border-radius: 50%; align-self: center; }
+      .dl { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums;
+            font-family: var(--font-serif); }
+      .mbps { color: var(--ion-color-medium); font-size: 12px; }
+      .up { font-size: 12px; color: var(--cs-ok-fg); margin-left: 4px; }
+      .test-meta { font-size: 12px; color: var(--ion-color-medium); margin-top: 3px; }
     `
   ]
 })
 export class HistoryPage implements OnInit {
+  tab = signal<'list' | 'map'>('list');
   tests = signal<SpeedResult[]>([]);
   markers = signal<MapMarker[]>([]);
 
   constructor(public store: StoreService, private toast: ToastController) {
-    addIcons({ downloadOutline, trashOutline, shareOutline });
+    addIcons({ trashOutline });
   }
 
   ngOnInit(): void {
@@ -105,45 +129,22 @@ export class HistoryPage implements OnInit {
     );
   }
 
-  async export(): Promise<void> {
-    const data = JSON.stringify(this.store.buildExport(true), null, 2);
-    try {
-      await navigator.clipboard.writeText(data);
-      await this.toastMsg('Export copied to clipboard');
-    } catch {}
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'CellScope history',
-          text: 'CellScope speed test history',
-          message: undefined,
-          url: undefined,
-          files: [new File([data], `cellscope-${Date.now()}.json`, { type: 'application/json' })]
-        } as ShareData);
-      } catch {}
-    }
-  }
-
-  async importFile(ev: Event): Promise<void> {
-    const inp = ev.target as HTMLInputElement;
-    const f = inp.files?.[0];
-    if (!f) return;
-    try {
-      const txt = await f.text();
-      const res = await this.store.importHistory(txt);
-      this.reload();
-      await this.toastMsg(`Imported ${res.tests} tests, ${res.countries} spectrum countries`);
-    } catch (e) {
-      await this.toastMsg(`Import failed: ${e}`);
-    } finally {
-      inp.value = '';
-    }
+  movedText(t: SpeedResult): string | null {
+    const tests = this.store.tests$.value;
+    const idx = tests.findIndex(x => x.id === t.id);
+    if (idx <= 0) return 'start point';
+    const prev = tests[idx - 1];
+    if (!prev.geo || !t.geo) return null;
+    const km = haversineKm(prev.geo.lat, prev.geo.lon, t.geo.lat, t.geo.lon);
+    if (km < 0.05) return 'same spot as previous';
+    return `${km < 1 ? (km * 1000).toFixed(0) + ' m' : km.toFixed(1) + ' km'} from previous`;
   }
 
   async clear(): Promise<void> {
     await this.store.clearTests();
     this.reload();
-    await this.toastMsg('History cleared');
+    const t = await this.toast.create({ message: 'History cleared', duration: 1800, position: 'bottom' });
+    await t.present();
   }
 
   dateOf(t: number): string {
@@ -152,11 +153,6 @@ export class HistoryPage implements OnInit {
 
   colorOf(t: SpeedResult): string {
     return colorForMbps(t.dlMbps);
-  }
-
-  private async toastMsg(m: string): Promise<void> {
-    const t = await this.toast.create({ message: m, duration: 2400, position: 'bottom' });
-    await t.present();
   }
 }
 

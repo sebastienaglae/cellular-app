@@ -8,6 +8,7 @@ import {
 import { NativeService, Snapshot } from '../services/native.service';
 import { StoreService } from '../services/store.service';
 import { CountrySpectrum, SpectrumAlloc, spectrumForCountry } from '../data/spectrum';
+import { FlagComponent } from '../components/flag.component';
 import { LTE_BANDS, NR_RANGES, earfcnToFreqDl, fmtMhz, nrBandFreqRange, nrArfcnToFreqMhz, bandLabel } from '../data/bands';
 import { MCC_COUNTRY } from '../data/plmn-db';
 
@@ -20,7 +21,7 @@ interface BandRowView {
   selector: 'cs-spectrum',
   standalone: true,
   imports: [
-    FormsModule,
+    FormsModule, FlagComponent,
     IonHeader, IonToolbar, IonTitle, IonButtons, IonMenuButton, IonContent,
     IonSearchbar, IonList, IonItem, IonLabel, IonNote, IonInput, IonSelect, IonSelectOption
   ],
@@ -64,12 +65,11 @@ interface BandRowView {
             }
           </ion-select>
           @if (activeSpectrum(); as cs) {
-            <div class="cs-dim" style="margin-bottom:4px;">
-              {{ cs.name }}
-              @if (isAutoDetected()) { <span class="cs-badge ok" style="margin:0 6px;">auto-detected</span> }
-              · {{ cs.allocs.length }} allocations
-              · source: {{ cs.source || 'bundled sample' }}
-              @if (cs.updated) {· {{ cs.updated }}}
+            <div class="cs-dim" style="margin-bottom:4px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              @if (cs.iso) { <cs-flag [iso]="cs.iso" [size]="20"></cs-flag> }
+              <b style="font-size:14px;">{{ cs.name }}</b>
+              @if (isAutoDetected()) { <span class="cs-badge ok" style="margin:0;">auto-detected</span> }
+              <span>· {{ cs.allocs.length }} allocations · {{ cs.source || 'bundled' }}@if (cs.updated) { · {{ cs.updated }}}</span>
             </div>
             <ion-searchbar placeholder="Filter operator or band…" debounce="150" [(ngModel)]="allocFilter"></ion-searchbar>
             @for (g of grouped(cs); track g.band) {

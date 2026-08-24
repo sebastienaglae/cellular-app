@@ -8,14 +8,15 @@ import { addIcons } from 'ionicons';
 import { idCardOutline } from 'ionicons/icons';
 import { NativeService, Snapshot } from '../services/native.service';
 import { lookupPlmn, OperatorInfo, searchPlmn } from '../data/plmn-db';
+import { FlagComponent } from '../components/flag.component';
 
 @Component({
   selector: 'cs-operators',
   standalone: true,
   imports: [
     FormsModule,
-    IonHeader, IonToolbar, IonTitle, IonButtons, IonMenuButton, IonContent,
-    IonList, IonItem, IonLabel, IonInput, IonBadge, IonNote, IonSearchbar, IonIcon
+    IonHeader, IonToolbar, IonTitle, IonButtons, IonContent,
+    IonList, IonItem, IonLabel, IonInput, IonBadge, IonNote, IonSearchbar, IonIcon, FlagComponent
   ],
   template: `
     <ion-header>
@@ -31,7 +32,13 @@ import { lookupPlmn, OperatorInfo, searchPlmn } from '../data/plmn-db';
             @if (s.sims.length) {
               @for (sim of s.sims; track sim.subscriptionId) {
                 <div class="sim-card">
-                  <div class="cs-kv"><span class="k">Carrier</span><span class="v">{{ sim.carrierName || '—' }}</span></div>
+                  <div class="cs-kv">
+                    <span class="k">Carrier</span>
+                    <span class="v carrier">
+                      @if (sim.isoCountry) { <cs-flag [iso]="sim.isoCountry" [size]="18"></cs-flag> }
+                      {{ sim.carrierName || '—' }}
+                    </span>
+                  </div>
                   <div class="cs-kv"><span class="k">Display name</span><span class="v">{{ sim.displayName || '—' }}</span></div>
                   <div class="cs-kv"><span class="k">PLMN (ICCID)</span><span class="v cs-mono">{{ sim.mcc }}-{{ sim.mnc }}</span></div>
                   <div class="cs-kv"><span class="k">Slot / eSIM</span><span class="v">#{{ sim.slotIndex }} · {{ sim.isEmbedded ? 'eSIM' : 'physical' }}</span></div>
@@ -49,6 +56,7 @@ import { lookupPlmn, OperatorInfo, searchPlmn } from '../data/plmn-db';
           <h3>Network registration</h3>
           @if (netOp(); as op) {
             <div class="op-line">
+              @if (netOp()?.iso) { <cs-flag [iso]="netOp()!.iso" [size]="26"></cs-flag> }
               <b>{{ snap()!.service.operatorName || 'Unknown' }}</b>
               @if (isMvno()) { <ion-badge color="tertiary">MVNO on {{ mvnoHost() }}</ion-badge> }
               @if (snap()!.service.roaming) { <ion-badge color="warning">roaming</ion-badge> }
@@ -98,7 +106,8 @@ import { lookupPlmn, OperatorInfo, searchPlmn } from '../data/plmn-db';
   styles: [
     `
       .sim-card { border-left:3px solid var(--ion-color-primary); padding-left:10px; margin-bottom:8px; }
-      .op-line { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px; font-size:16px; }
+      .op-line { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:8px; font-size:16px; }
+      .carrier { display:inline-flex; align-items:center; gap:7px; }
       .mvno-note { font-size:12px; color:var(--ion-color-medium); margin-top:6px; opacity:0; transition:.3s; }
       .mvno-note.show { opacity:1; }
       .spec-row { display:flex; justify-content:space-between; gap:10px; padding:7px 2px; font-size:13px;

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { BehaviorSubject } from 'rxjs';
-import { SpeedResult } from '../models';
+import { PingSession, SpeedResult } from '../models';
 import { BUNDLED_SPECTRUM, CountrySpectrum, mergeSpectrum, fetchFullSpectrum } from '../data/spectrum';
 
 export interface AppSettings {
@@ -30,30 +30,24 @@ export const DEFAULT_SETTINGS: AppSettings = {
   permsAsked: false
 };
 
-export interface HistoryFile {
-  kind: 'cellscope-history';
-  version: 1;
-  exportedAt: string;
-  settings?: Partial<AppSettings>;
-  tests: SpeedResult[];
-  spectrum?: CountrySpectrum[];
-}
-
 const K_SETTINGS = 'cs.settings.v1';
 const K_TESTS = 'cs.tests.v1';
+const K_PINGS = 'cs.pings.v1';
 const K_SPECTRUM = 'cs.spectrum.custom.v1';
 
 @Injectable({ providedIn: 'root' })
 export class StoreService {
   settings$ = new BehaviorSubject<AppSettings>({ ...DEFAULT_SETTINGS });
   tests$ = new BehaviorSubject<SpeedResult[]>([]);
+  pings$ = new BehaviorSubject<PingSession[]>([]);
   spectrumCustom$ = new BehaviorSubject<CountrySpectrum[]>([]);
   spectrumFull$ = new BehaviorSubject<CountrySpectrum[]>([]);
 
   async init(): Promise<void> {
-    const [s, t, sp] = await Promise.all([
+    const [s, t, p, sp] = await Promise.all([
       Preferences.get({ key: K_SETTINGS }),
       Preferences.get({ key: K_TESTS }),
+      Preferences.get({ key: K_PINGS }),
       Preferences.get({ key: K_SPECTRUM })
     ]);
     if (s.value) {
@@ -64,6 +58,11 @@ export class StoreService {
     if (t.value) {
       try {
         this.tests$.next(JSON.parse(t.value));
+      } catch {}
+    }
+    if (p.value) {
+      try {
+        this.pings$.next(JSON.parse(p.value));
       } catch {}
     }
     if (sp.value) {
@@ -125,35 +124,15 @@ export class StoreService {
     await Preferences.set({ key: K_TESTS, value: '[]' });
   }
 
-  buildExport(includeSpectrum: boolean): HistoryFile {
-    return {
-      kind: 'cellscope-history',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      settings: this.settings,
-      tests: this.tests$.value,
-      ...(includeSpectrum && this.spectrumCustom$.value.length ? { spectrum: this.spectrumCustom$.value } : {})
-    };
+  async addPing(s: PingSession): Promise<void> {
+    const list = [...this.pings$.value, s].slice(-100);
+    this.pings$.next(list);
+    await Preferences.set({ key: K_PINGS, value: JSON.stringify(list) });
   }
 
-  async importHistory(text: string): Promise<{ tests: number; countries: number }> {
-    const f: HistoryFile = JSON.parse(text);
-    if (f.kind !== 'cellscope-history') throw new Error('Not a CellScope export');
-    let tests = 0;
-    let countries = 0;
-    if (Array.isArray(f.tests) && f.tests.length) {
-      const merged = [...f.tests, ...this.tests$.value].slice(-500);
-      this.tests$.next(merged);
-      await Preferences.set({ key: K_TESTS, value: JSON.stringify(merged) });
-      tests = f.tests.length;
-    }
-    if (f.settings) {
-      await this.saveSettings(f.settings);
-    }
-    if (f.spectrum?.length) {
-      countries = await this.importSpectrumJson(JSON.stringify(f.spectrum));
-    }
-    return { tests, countries };
+  async clearPings(): Promise<void> {
+    this.pings$.next([]);
+    await Preferences.set({ key: K_PINGS, value: '[]' });
   }
 }
 

@@ -113,6 +113,14 @@ public class CellInfoPlugin extends Plugin {
     // ----------------------------------------------------------- permissions
 
     @PluginMethod
+    public void checkPermissions(PluginCall call) {
+        JSObject o = new JSObject();
+        o.put("location", has(Manifest.permission.ACCESS_FINE_LOCATION));
+        o.put("phone", Build.VERSION.SDK_INT >= 33 || has(Manifest.permission.READ_PHONE_STATE));
+        call.resolve(o);
+    }
+
+    @PluginMethod
     public void requestPermissions(PluginCall call) {
         boolean fine = has(Manifest.permission.ACCESS_FINE_LOCATION);
         boolean phone = Build.VERSION.SDK_INT >= 33 || has(Manifest.permission.READ_PHONE_STATE);

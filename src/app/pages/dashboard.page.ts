@@ -19,12 +19,13 @@ import { fmtMhz } from '../data/bands';
 import { SignalBarsComponent } from '../components/signal-bars.component';
 import { SparklineComponent } from '../components/sparkline.component';
 import { MapViewComponent, MapMarker } from '../components/map-view.component';
+import { FlagComponent } from '../components/flag.component';
 
 @Component({
   selector: 'cs-dashboard',
   standalone: true,
   imports: [
-    SignalBarsComponent, SparklineComponent, RouterLink, MapViewComponent,
+    SignalBarsComponent, SparklineComponent, RouterLink, MapViewComponent, FlagComponent,
     IonHeader, IonToolbar, IonTitle, IonButtons, IonContent,
     IonRefresher, IonRefresherContent, IonCard, IonCardHeader, IonCardTitle,
     IonCardSubtitle, IonCardContent, IonChip, IonBadge, IonIcon, IonNote,
@@ -51,9 +52,9 @@ import { MapViewComponent, MapMarker } from '../components/map-view.component';
               CellScope reads everything directly from your phone — no cloud, nothing leaves the device.
             </p>
             <ul class="perm-list">
-              <li><b>📍 Location</b> — required by Android to scan nearby cells and place you on the map.</li>
-              <li><b>📞 Phone</b> — operator name, PLMN codes and SIM details (MVNO detection).</li>
-              <li><b>📶 Nearby devices</b> — Wi-Fi name and signal of the network you use.</li>
+              <li><b>Location</b> — required by Android to scan nearby cells and place you on the map.</li>
+              <li><b>Phone</b> — operator name, PLMN codes and SIM details (MVNO detection).</li>
+              <li><b>Nearby devices</b> — Wi-Fi name and signal of the network you use.</li>
             </ul>
             <div class="perm-actions">
               <ion-button size="small" [disabled]="permBusy()" (click)="grantPerms()">
@@ -121,10 +122,13 @@ import { MapViewComponent, MapMarker } from '../components/map-view.component';
           <div class="cs-card">
             <h3>Operator</h3>
             @if (snap(); as sp) {
-              <div class="op-name">{{ sp.service.operatorName || 'Unknown' }}</div>
+              <div class="op-row">
+                @if (sp.service.isoCountry) { <cs-flag [iso]="sp.service.isoCountry" [size]="26"></cs-flag> }
+                <span class="op-name">{{ sp.service.operatorName || 'Unknown' }}</span>
+              </div>
               <div class="cs-kv"><span class="k">PLMN</span><span class="v cs-mono">{{ plmn() || '—' }}</span></div>
               <div class="cs-kv"><span class="k">Data tech</span><span class="v">{{ sp.service.dataTech }}{{ nrMode() ? '-' + nrMode() : '' }}</span></div>
-              <div class="cs-kv"><span class="k">Country</span><span class="v">{{ sp.service.isoCountry || '—' }}</span></div>
+              <div class="cs-kv"><span class="k">Country</span><span class="v">{{ (sp.service.isoCountry || '—').toUpperCase() }}</span></div>
             }
           </div>
           <div class="cs-card">
@@ -179,7 +183,8 @@ import { MapViewComponent, MapMarker } from '../components/map-view.component';
       .kv-row { display:flex; justify-content:space-between; gap:6px; padding:6px 0; border-bottom:1px dashed rgba(148,163,184,.2); }
       .kv-row:last-of-type { border-bottom:none; }
       .kv-row > div { flex:1; text-align:center; }
-      .op-name { font-size:17px; font-weight:700; margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .op-row { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+      .op-name { font-size: 17px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .chart-box { height:52px; margin-top:10px; }
       ul.reasons { margin:4px 0 0 18px; padding:0; font-size:12.5px; color:var(--ion-color-medium); }
       ul.reasons li { margin-bottom:2px; }
@@ -274,6 +279,14 @@ export class DashboardPage implements OnInit, OnDestroy {
   }
 
   private async maybeShowPermCard(): Promise<void> {
+    const p = await this.native.checkPermissions();
+    if (p.location && p.phone) {
+      // already granted - never bother the user again
+      if (!this.store.settings.permsAsked) {
+        await this.store.saveSettings({ permsAsked: true });
+      }
+      return;
+    }
     if (this.store.settings.permsAsked) return;
     this.showPermCard.set(true);
   }

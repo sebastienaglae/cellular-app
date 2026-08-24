@@ -122,6 +122,19 @@ export interface PingResult {
   raw?: string;
 }
 
+export interface PingSession {
+  id: string;
+  t: number;
+  host: string;
+  sent: number;
+  avgMs: number | null;
+  minMs: number | null;
+  maxMs: number | null;
+  jitterMs: number | null;
+  lossPct: number | null;
+  times: number[];
+}
+
 export interface SpeedResult {
   id: string;
   t: number;

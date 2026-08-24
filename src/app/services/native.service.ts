@@ -27,6 +27,7 @@ export interface RawCell {
 
 interface CellInfoPluginApi {
   requestPermissions(): Promise<{ granted: boolean }>;
+  checkPermissions(): Promise<{ location: boolean; phone: boolean }>;
   getAllCellInfo(): Promise<{ cells: RawCell[] }>;
   getServiceState(): Promise<{
     operatorName: string | null; operatorNumeric: string | null; isoCountry: string | null;
@@ -82,6 +83,11 @@ export class NativeService {
     } catch (e) {
       return fallback;
     }
+  }
+
+  async checkPermissions(): Promise<{ location: boolean; phone: boolean }> {
+    if (this.devMode) return { location: true, phone: true };
+    return this.safe(() => CellInfo.checkPermissions(), { location: false, phone: false });
   }
 
   async requestPermissions(): Promise<boolean> {
