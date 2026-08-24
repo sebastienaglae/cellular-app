@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
+import { EXTRA_LANGS, EXTRA_LANG_NAMES } from './i18n-langs';
 
-export type Lang = 'en' | 'fr' | 'jp';
+export type Lang = 'en' | 'fr' | 'jp' | 'es' | 'de' | 'it' | 'pt' | 'nl' | 'zh' | 'ko';
 
 /** French + Japanese translations keyed by the English source string. */
 const FR: Record<string, string> = {
@@ -254,15 +255,31 @@ export class I18nService {
 
   autoDetect(): Lang {
     const nav = typeof navigator !== 'undefined' ? navigator.language || '' : '';
-    const l: Lang = nav.toLowerCase().startsWith('fr') ? 'fr' : nav.toLowerCase().startsWith('ja') ? 'jp' : 'en';
+    const n = nav.toLowerCase();
+    const two = n.slice(0, 2);
+    let l: Lang = 'en';
+    if (two === 'fr') l = 'fr';
+    else if (two === 'ja') l = 'jp';
+    else if (two === 'es') l = 'es';
+    else if (two === 'de') l = 'de';
+    else if (two === 'it') l = 'it';
+    else if (two === 'pt') l = 'pt';
+    else if (two === 'nl') l = 'nl';
+    else if (two === 'zh') l = 'zh';
+    else if (two === 'ko') l = 'ko';
     this.lang.set(l);
     return l;
   }
 
   t(text: string, params?: Record<string, string | number>): string {
     if (this.lang() === 'en') return this.interpolate(text, params);
-    const map = this.lang() === 'fr' ? FR : JP;
+    const l = this.lang();
+    const map = l === 'fr' ? FR : l === 'jp' ? JP : EXTRA_LANGS[l];
     return this.interpolate(map[text] ?? text, params);
+  }
+
+  extraLangNames(): Record<string, string> {
+    return EXTRA_LANG_NAMES;
   }
 
   private interpolate(s: string, params?: Record<string, string | number>): string {

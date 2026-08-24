@@ -66,6 +66,13 @@ import { MCC_COUNTRY } from '../data/plmn-db';
               <ion-select-option value="en">English</ion-select-option>
               <ion-select-option value="fr">Français</ion-select-option>
               <ion-select-option value="jp">日本語</ion-select-option>
+              <ion-select-option value="es">Español</ion-select-option>
+              <ion-select-option value="de">Deutsch</ion-select-option>
+              <ion-select-option value="it">Italiano</ion-select-option>
+              <ion-select-option value="pt">Português</ion-select-option>
+              <ion-select-option value="nl">Nederlands</ion-select-option>
+              <ion-select-option value="zh">中文</ion-select-option>
+              <ion-select-option value="ko">한국어</ion-select-option>
             </ion-select>
           </ion-item>
           <ion-item lines="none">
