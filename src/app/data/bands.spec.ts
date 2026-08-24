@@ -75,3 +75,37 @@ describe('resolveArfcn unified API', () => {
     expect(lte.duplex).toBe('FDD');
   });
 });
+
+describe('band engine edge cases', () => {
+  it('returns null for out-of-range channels', () => {
+    expect(earfcnToBand(-1)).toBeNull();
+    expect(earfcnToBand(99999)).toBeNull();
+    expect(earfcnToFreqDl(99999)).toBeNull();
+  });
+
+  it('resolves band boundaries inclusively', () => {
+    expect(earfcnToBand(0)?.band).toBe(1);       // B1 first channel
+    expect(earfcnToBand(599)?.band).toBe(1);     // B1 last channel
+    expect(earfcnToBand(600)?.band).toBe(2);     // B2 first channel
+    expect(earfcnToBand(41589)?.band).toBe(41);  // B41 last channel
+    expect(earfcnToBand(41590)?.band).toBe(42);  // B42 first channel
+  });
+
+  it('computes NR raster boundary frequencies exactly', () => {
+    expect(nrArfcnToFreqMhz(599999)).toBeCloseTo(2999.995, 4);
+    expect(nrArfcnToFreqMhz(2016666)).toBeCloseTo(24249.99, 2);
+  });
+
+  it('applies the UTRA raster F = 0.2 x N', () => {
+    const r = resolveArfcn('WCDMA', 10562);
+    expect(r.freqDlMhz).toBeCloseTo(2112.4, 1);
+    expect(resolveArfcn('WCDMA', 10700).freqDlMhz).toBeCloseTo(2140, 1);
+    expect(resolveArfcn('WCDMA', 1).freqDlMhz).toBeNull();
+  });
+
+  it('returns empty info for unknown RAT or missing arfcn', () => {
+    expect(resolveArfcn('UNKNOWN', 123).freqDlMhz).toBeNull();
+    expect(resolveArfcn('LTE', null).bandLabel).toBe('');
+    expect(resolveArfcn('CDMA', 1).freqDlMhz).toBeNull();
+  });
+});

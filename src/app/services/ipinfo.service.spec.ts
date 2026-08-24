@@ -66,3 +66,35 @@ describe('offline IP database', () => {
     expect(ranges[0]).toMatch(/^\d+\.\d+\.\d+\.\d+ – /);
   });
 });
+
+describe('ipinfo hardening', () => {
+  let svc: IpInfoService;
+
+  it('boundary lookups are exact on both range ends', async () => {
+    svc = new IpInfoService();
+    const raw = readFileSync('src/assets/data/ipdb.bin');
+    (svc as unknown as { parse(b: ArrayBuffer): void }).parse(
+      raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength) as ArrayBuffer
+    );
+
+    // 1.0.0.0/24 is the first modern allocation in the dump
+    expect(svc.lookup('1.0.0.0')).not.toBeNull();
+    expect(svc.lookup('1.0.0.255')).not.toBeNull();
+
+    // full-space corners are IANA-reserved (ASN 0) -> surfaced as no-match
+    expect(svc.lookup('255.255.255.255')).toBeNull();
+    expect(svc.lookup('0.0.0.0')).toBeNull();
+  });
+
+  it('handles malformed IPv6 forms safely', () => {
+    expect(ipv6ToBytes('::')).not.toBeNull();          // unspecified
+    expect(ipv6ToBytes('1:2:3:4:5:6:7:8')).not.toBeNull();
+    expect(ipv6ToBytes('1:2:3:4:5:6:7:8:9')).toBeNull();
+    expect(ipv6ToBytes('1::2::3')).toBeNull();
+    expect(ipv6ToBytes('::ffff:192.168.1.1')).not.toBeNull();
+  });
+
+  it('unknown private IPv6 ULA returns null rather than crashing', () => {
+    expect(svc.lookup('fd00::1')).toBeNull();
+  });
+});

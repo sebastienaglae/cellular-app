@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonBadge, IonContent, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonList,
@@ -12,6 +12,7 @@ import { FlagComponent } from '../components/flag.component';
 
 @Component({
   selector: 'cs-operators',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     FormsModule,

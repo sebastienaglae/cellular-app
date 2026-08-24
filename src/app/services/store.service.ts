@@ -80,10 +80,17 @@ export class StoreService {
     return this.settings$.value;
   }
 
+  private async safeSet(key: string, value: string): Promise<void> {
+    // storage can fail (full disk, WebView storage reset) - keep memory state authoritative
+    try {
+      await Preferences.set({ key, value });
+    } catch {}
+  }
+
   async saveSettings(patch: Partial<AppSettings>): Promise<void> {
     const next = { ...this.settings$.value, ...patch };
     this.settings$.next(next);
-    await Preferences.set({ key: K_SETTINGS, value: JSON.stringify(next) });
+    await this.safeSet(K_SETTINGS, JSON.stringify(next));
   }
 
   allSpectrum(): CountrySpectrum[] {
@@ -96,9 +103,16 @@ export class StoreService {
   }
 
   async importSpectrumJson(text: string): Promise<number> {
-    let parsed = JSON.parse(text);
-    if (!Array.isArray(parsed)) parsed = parsed?.countries || [];
-    const incoming: CountrySpectrum[] = parsed
+    if (typeof text !== 'string' || text.length > 5_000_000) throw new Error('File too large (max 5 MB)');
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return 0; // invalid JSON - nothing imported, caller decides whether to surface
+    }
+    if (!Array.isArray(parsed)) parsed = (parsed as { countries?: unknown })?.countries || [];
+    if (!Array.isArray(parsed)) return 0;
+    const incoming: CountrySpectrum[] = (parsed as CountrySpectrum[])
       .filter((c: CountrySpectrum) => c && c.iso && Array.isArray(c.allocs))
       .map((c: CountrySpectrum) => ({
         iso: String(c.iso).toUpperCase(),
@@ -108,7 +122,7 @@ export class StoreService {
         updated: c.updated || ''
       }));
     const merged = mergeSpectrum(this.spectrumCustom$.value.length ? this.spectrumCustom$.value : [], incoming);
-    await Preferences.set({ key: K_SPECTRUM, value: JSON.stringify(merged.filter(m => m.source !== 'bundled sample (public knowledge)')) });
+    await this.safeSet(K_SPECTRUM, JSON.stringify(merged.filter(m => m.source !== 'bundled sample (public knowledge)')));
     this.spectrumCustom$.next(merged);
     return incoming.length;
   }
@@ -116,23 +130,23 @@ export class StoreService {
   async addTest(r: SpeedResult): Promise<void> {
     const list = [...this.tests$.value, r].slice(-500);
     this.tests$.next(list);
-    await Preferences.set({ key: K_TESTS, value: JSON.stringify(list) });
+    await this.safeSet(K_TESTS, JSON.stringify(list));
   }
 
   async clearTests(): Promise<void> {
     this.tests$.next([]);
-    await Preferences.set({ key: K_TESTS, value: '[]' });
+    await this.safeSet(K_TESTS, '[]');
   }
 
   async addPing(s: PingSession): Promise<void> {
     const list = [...this.pings$.value, s].slice(-100);
     this.pings$.next(list);
-    await Preferences.set({ key: K_PINGS, value: JSON.stringify(list) });
+    await this.safeSet(K_PINGS, JSON.stringify(list));
   }
 
   async clearPings(): Promise<void> {
     this.pings$.next([]);
-    await Preferences.set({ key: K_PINGS, value: '[]' });
+    await this.safeSet(K_PINGS, '[]');
   }
 }
 

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import {
   IonBadge, IonContent, IonHeader, IonItem, IonLabel, IonList,
   IonMenuButton, IonNote, IonButtons, IonTitle, IonToolbar
@@ -12,6 +12,7 @@ import { SignalBarsComponent } from '../components/signal-bars.component';
 
 @Component({
   selector: 'cs-cells',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     SignalBarsComponent,

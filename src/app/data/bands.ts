@@ -191,21 +191,10 @@ export function gsmArfcnToFreqMhz(a: number): number | null {
   return null;
 }
 
-/** UTRA (WCDMA) UARFCN -> approximate DL frequency using band anchor points. */
-const UTRA_ANCHORS: [number, number, number][] = [
-  // [band, uarfcnLow, dlLowMHz]
-  [1, 10562, 2110],
-  [2, 9662, 1930],
-  [3, 11625, 1805],
-  [4, 1537, 2110],
-  [5, 4357, 869],
-  [8, 2937, 925]
-];
+/** UTRA (WCDMA) DL frequency: F = 0.2 MHz x UARFCN (TS 25.101). Lowest DL UARFCN is band VIII (2937). */
 export function utraUarfcnToFreqMhz(u: number): number | null {
-  for (const [, uLow, fLow] of UTRA_ANCHORS) {
-    if (u >= uLow && u <= uLow + 400) return round1(fLow + 0.2 * (u - uLow));
-  }
-  return null;
+  if (!Number.isFinite(u) || u < 2937 || u > 16387) return null;
+  return round1(0.2 * u);
 }
 
 export function bandLabel(rat: Rat, band: number | null): string {

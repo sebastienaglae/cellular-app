@@ -642,6 +642,15 @@ public class CellInfoPlugin extends Plugin {
     @PluginMethod
     public void ping(PluginCall call) {
         String host = call.getString("host", "1.1.1.1");
+        if (!PingParser.isValidHost(host)) {
+            JSObject bad = new JSObject();
+            bad.put("ok", false);
+            bad.put("host", host);
+            bad.put("times", new JSArray());
+            bad.put("error", "invalid host");
+            call.resolve(bad);
+            return;
+        }
         int count = Math.min(30, Math.max(1, call.getInt("count", 10)));
         int size = Math.min(1400, Math.max(8, call.getInt("size", 56)));
         int timeoutSec = Math.min(10, Math.max(1, call.getInt("timeoutSec", 3)));
@@ -653,7 +662,7 @@ public class CellInfoPlugin extends Plugin {
         try {
             ProcessBuilder pb = new ProcessBuilder(
                 "/system/bin/ping", "-c", String.valueOf(count), "-s", String.valueOf(size),
-                "-W", String.valueOf(timeoutSec), "-i", "0.3", host
+                "-W", String.valueOf(timeoutSec), "-i", "0.3", host.trim()
             );
             pb.redirectErrorStream(true);
             Process p = pb.start();
@@ -661,11 +670,12 @@ public class CellInfoPlugin extends Plugin {
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line;
             while ((line = br.readLine()) != null) sb.append(line).append('\n');
-            boolean finished = false;
+            boolean finished;
             try {
                 finished = p.waitFor(timeoutSec * count + 5, java.util.concurrent.TimeUnit.SECONDS);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
+                finished = false;
             }
             if (!finished) {
                 p.destroyForcibly();
@@ -675,27 +685,20 @@ public class CellInfoPlugin extends Plugin {
                 call.resolve(o);
                 return;
             }
+
+            PingParser.Result r = PingParser.parse(sb.toString());
+            for (Double d : r.times) timesArr.put(d);
+            o.put("transmitted", r.transmitted);
+            o.put("received", r.received);
+            o.put("lossPct", r.lossPct);
+            o.put("minMs", r.minMs);
+            o.put("avgMs", r.avgMs);
+            o.put("maxMs", r.maxMs);
+            o.put("jitterMs", r.jitterMs);
+            o.put("ttl", r.ttl);
+            o.put("ok", r.hasReplies());
+            if (!r.hasReplies()) o.put("error", "no replies (blocked or unreachable)");
             String raw = sb.toString();
-
-            java.util.regex.Matcher mt = java.util.regex.Pattern.compile("time=([\\d.]+)").matcher(raw);
-            List<Double> times = new ArrayList<>();
-            while (mt.find()) times.add(Double.parseDouble(mt.group(1)));
-            for (Double d : times) timesArr.put(d);
-
-            o.put("transmitted", firstGroup(raw, "(\\d+) packets transmitted"));
-            o.put("received", firstGroup(raw, ",\\s*(\\d+) received"));
-            o.put("lossPct", firstGroup(raw, "([\\d.]+)% packet loss"));
-            java.util.regex.Matcher mr = java.util.regex.Pattern
-                .compile("min/avg/max(?:/mdev)?\\s*=\\s*([\\d.]+)/([\\d.]+)/([\\d.]+)(?:/([\\d.]+))?").matcher(raw);
-            if (mr.find()) {
-                o.put("minMs", Double.parseDouble(mr.group(1)));
-                o.put("avgMs", Double.parseDouble(mr.group(2)));
-                o.put("maxMs", Double.parseDouble(mr.group(3)));
-                o.put("jitterMs", mr.group(4) != null ? Double.parseDouble(mr.group(4)) : null);
-            }
-            o.put("ttl", firstGroup(raw, "ttl=(\\d+)"));
-            o.put("ok", !times.isEmpty());
-            if (times.isEmpty()) o.put("error", "no replies (blocked or unreachable)");
             o.put("raw", raw.length() > 4000 ? raw.substring(0, 4000) : raw);
             call.resolve(o);
         } catch (Throwable t) {
@@ -704,21 +707,5 @@ public class CellInfoPlugin extends Plugin {
             call.resolve(o);
         }
     }
-
-    private Integer firstGroup(String s, String rx) {
-        try {
-            java.util.regex.Matcher m = java.util.regex.Pattern.compile(rx).matcher(s);
-            return m.find() ? Integer.parseInt(m.group(1)) : null;
-        } catch (Throwable t) {
-            return null;
-        }
-    }
-
-    private Double parseDouble(String s) {
-        try {
-            return s == null ? null : Double.parseDouble(s);
-        } catch (Throwable t) {
-            return null;
-        }
-    }
 }
+

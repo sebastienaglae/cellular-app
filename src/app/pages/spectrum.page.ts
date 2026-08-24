@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonContent, IonHeader, IonInput, IonItem, IonLabel, IonList,
@@ -19,6 +19,7 @@ interface BandRowView {
 
 @Component({
   selector: 'cs-spectrum',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     FormsModule, FlagComponent,

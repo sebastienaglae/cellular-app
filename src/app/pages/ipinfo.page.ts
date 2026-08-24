@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonBadge, IonButton, IonButtons, IonContent, IonHeader, IonIcon,
@@ -18,6 +18,7 @@ interface LookupRow {
 
 @Component({
   selector: 'cs-ipinfo',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     FormsModule, FlagComponent,

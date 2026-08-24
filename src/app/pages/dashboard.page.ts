@@ -1,4 +1,4 @@
-import { Component, NgZone, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
   IonBadge, IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader,
@@ -23,6 +23,7 @@ import { FlagComponent } from '../components/flag.component';
 
 @Component({
   selector: 'cs-dashboard',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     SignalBarsComponent, SparklineComponent, RouterLink, MapViewComponent, FlagComponent,

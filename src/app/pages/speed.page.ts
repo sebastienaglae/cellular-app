@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonButton, IonContent, IonHeader, IonIcon, IonItem, IonLabel,
@@ -6,7 +6,11 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { playOutline, stopOutline, timerOutline } from 'ionicons/icons';
-import Chart from 'chart.js/auto';
+import { Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Legend, Tooltip } from 'chart.js';
+import { gaugeOffset, nicePeak, fmtMbps } from '../utils/gauge';
+import { movementText } from '../utils/geo';
+
+Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Legend, Tooltip);
 import { SpeedService } from '../services/speed.service';
 import { StoreService } from '../services/store.service';
 import { NativeService } from '../services/native.service';
@@ -15,6 +19,7 @@ import { FlagComponent } from '../components/flag.component';
 
 @Component({
   selector: 'cs-speed',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     FormsModule, FlagComponent,
@@ -190,10 +195,7 @@ export class SpeedPage implements OnInit, OnDestroy {
     const idx = tests.findIndex(x => x.id === l.id);
     if (idx <= 0) return null;
     const prev = tests[idx - 1];
-    if (!prev.geo || !l.geo) return null;
-    const km = haversineKm(prev.geo.lat, prev.geo.lon, l.geo.lat, l.geo.lon);
-    if (km < 0.05) return 'same location as previous test';
-    return `${km < 1 ? (km * 1000).toFixed(0) + ' m' : km.toFixed(1) + ' km'} from previous test`;
+    return movementText(prev.geo, l.geo);
   }
 
   async run(quick: boolean): Promise<void> {
@@ -201,7 +203,7 @@ export class SpeedPage implements OnInit, OnDestroy {
       this.running.set(true);
       let v = 0;
       const peak = 120 + Math.random() * 300;
-      this.peak.set(Math.ceil(peak / 50) * 50);
+      this.peak.set(nicePeak(peak));
       for (const ph of ['DOWNLOAD', 'UPLOAD'] as const) {
         this.phase.set(ph);
         v = 0;
@@ -209,7 +211,7 @@ export class SpeedPage implements OnInit, OnDestroy {
           await new Promise(r => setTimeout(r, 80));
           v = Math.max(v, peak * (ph === 'UPLOAD' ? 0.35 : 1) * (i / 22) * (0.85 + Math.random() * 0.3));
           this.liveMbps.set(v);
-          this.peak.set(Math.max(this.peak(), Math.ceil((v * 1.15) / 50) * 50));
+          this.peak.set(Math.max(this.peak(), nicePeak(v)));
         }
       }
       const fake = {
@@ -237,7 +239,7 @@ export class SpeedPage implements OnInit, OnDestroy {
           this.phase.set(phase.toUpperCase());
           this.liveMbps.set(mbps);
           if (mbps > 0) {
-            this.peak.set(Math.max(this.peak(), Math.ceil((mbps * 1.15) / 50) * 50));
+            this.peak.set(Math.max(this.peak(), nicePeak(mbps)));
           }
         }
       });
@@ -332,14 +334,4 @@ export class SpeedPage implements OnInit, OnDestroy {
     const t = await this.toast.create({ message: m, duration: 2200, position: 'bottom' });
     await t.present();
   }
-}
-
-export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
 }

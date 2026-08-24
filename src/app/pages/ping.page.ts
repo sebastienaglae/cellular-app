@@ -1,4 +1,4 @@
-import { Component, OnDestroy, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonInput,
@@ -10,9 +10,11 @@ import { playOutline, stopOutline } from 'ionicons/icons';
 import { NativeService } from '../services/native.service';
 import { StoreService } from '../services/store.service';
 import { PingSession } from '../models';
+import { pingStats } from '../utils/ping-stats';
 
 @Component({
   selector: 'cs-ping',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     FormsModule,
@@ -65,10 +67,10 @@ import { PingSession } from '../models';
             }
             @if (times().length >= 2) {
               <div class="stats">
-                <div><span class="cs-dim">AVG</span><b>{{ fmt(avg()) }}</b></div>
-                <div><span class="cs-dim">MIN</span><b>{{ fmt(min()) }}</b></div>
-                <div><span class="cs-dim">MAX</span><b>{{ fmt(max()) }}</b></div>
-                <div><span class="cs-dim">JITTER</span><b>{{ fmt(jitter()) }}</b></div>
+                <div><span class="cs-dim">AVG</span><b>{{ fmt(stats().avg) }}</b></div>
+                <div><span class="cs-dim">MIN</span><b>{{ fmt(stats().min) }}</b></div>
+                <div><span class="cs-dim">MAX</span><b>{{ fmt(stats().max) }}</b></div>
+                <div><span class="cs-dim">JITTER</span><b>{{ fmt(stats().jitter) }}</b></div>
               </div>
               <div class="cs-dim" style="text-align:center;">ms · live session</div>
             }
@@ -157,23 +159,8 @@ export class PingPage implements OnDestroy {
   fmt(v: number | null): string {
     return v == null ? '—' : v.toFixed(1);
   }
-  avg(): number | null {
-    const t = this.times();
-    return t.length ? t.reduce((a, b) => a + b, 0) / t.length : null;
-  }
-  min(): number | null {
-    const t = this.times();
-    return t.length ? Math.min(...t) : null;
-  }
-  max(): number | null {
-    const t = this.times();
-    return t.length ? Math.max(...t) : null;
-  }
-  jitter(): number | null {
-    const t = this.times();
-    if (t.length < 2) return null;
-    const a = this.avg()!;
-    return Math.sqrt(t.reduce((acc, x) => acc + (x - a) ** 2, 0) / t.length);
+  stats() {
+    return pingStats(this.times());
   }
 
   async start(): Promise<void> {
@@ -198,20 +185,20 @@ export class PingPage implements OnDestroy {
 
     const t = this.times();
     if (t.length >= 3) {
-      const avg = t.reduce((a, b) => a + b, 0) / t.length;
+      const st = pingStats(t);
       await this.store.addPing({
         id: `p${Date.now()}`,
         t: Date.now(),
         host,
-        sent: t.length,
-        avgMs: avg,
-        minMs: Math.min(...t),
-        maxMs: Math.max(...t),
-        jitterMs: Math.sqrt(t.reduce((acc, x) => acc + (x - avg) ** 2, 0) / t.length),
+        sent: st.count,
+        avgMs: st.avg,
+        minMs: st.min,
+        maxMs: st.max,
+        jitterMs: st.jitter,
         lossPct: 0,
         times: t.slice(-50)
       });
-      this.toastMsg(`Session saved — ${t.length} probes to ${host}`);
+      this.toastMsg(`Session saved — ${st.count} probes to ${host}`);
     }
     this.running.set(false);
     this.times.set([]);

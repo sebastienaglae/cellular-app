@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   IonContent, IonHeader, IonIcon, IonItem, IonLabel, IonList,
@@ -20,6 +20,7 @@ interface MoreLink {
 
 @Component({
   selector: 'cs-more',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     RouterLink,

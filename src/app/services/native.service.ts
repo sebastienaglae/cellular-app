@@ -61,16 +61,63 @@ export interface Snapshot {
   caps: CapsRec | null;
 }
 
-const TECH_BY_INT: { [k: number]: Rat } = {
+export const TECH_BY_INT: { [k: number]: Rat } = {
   1: 'GSM', 2: 'GSM', 3: 'WCDMA', 4: 'CDMA', 5: 'CDMA', 6: 'CDMA', 7: 'CDMA',
   8: 'WCDMA', 9: 'WCDMA', 10: 'WCDMA', 11: 'GSM', 12: 'CDMA', 13: 'LTE',
   14: 'CDMA', 15: 'WCDMA', 16: 'TDSCDMA', 17: 'TDSCDMA', 18: 'IWLAN', 19: 'LTE', 20: 'NR'
 };
 
-function normalizeTech(t: string): Rat {
-  const up = (t || '').toUpperCase();
+export function normalizeTech(t: string): Rat {
+  const up = (t || '').toUpperCase().trim();
   if (['NR', 'LTE', 'WCDMA', 'GSM', 'CDMA', 'TDSCDMA', 'IWLAN'].includes(up)) return up as Rat;
   return 'UNKNOWN';
+}
+
+/** Android NETWORK_TYPE_* -> human-facing radio family. */
+export function dataTechLabel(int: number): Rat {
+  return TECH_BY_INT[int] || 'UNKNOWN';
+}
+
+/** Pure mapper: raw native cell record -> view model. Exported for unit tests. */
+export function mapRawCell(c: RawCell): CellRec {
+  const tech = normalizeTech(c.tech);
+  const info = resolveArfcn(tech, c.arfcn ?? null);
+  const band = c.bands && c.bands.length ? c.bands[0] : info.band;
+  const label =
+    tech === 'NR' && band != null ? `n${band}` :
+    tech === 'LTE' && band != null ? `B${band}` :
+    info.bandLabel || '';
+  return {
+    tech,
+    registered: !!c.registered,
+    timestamp: c.timestamp || Date.now(),
+    band: band ?? null,
+    bands: c.bands || [],
+    arfcn: c.arfcn ?? null,
+    freqDlMhz: info.freqDlMhz,
+    freqUlMhz: info.freqUlMhz,
+    bandwidthMhz: c.bandwidthMhz ?? null,
+    pci: c.pci ?? null,
+    cid: c.cid ?? null,
+    tac: c.tac ?? null,
+    mcc: c.mcc ?? null,
+    mnc: c.mnc ?? null,
+    rsrp: c.rsrp ?? null,
+    rsrq: c.rsrq ?? null,
+    rssi: c.rssi ?? null,
+    sinr: c.sinr ?? null,
+    dbm: c.dbm ?? null,
+    timingAdvance: c.timingAdvance ?? null,
+    bandLabel: label
+  };
+}
+
+/** Hostname / IPv4 / IPv6 characters only - blocks argument injection into ping. */
+export function isValidPingHost(host: string): boolean {
+  if (typeof host !== 'string') return false;
+  const h = host.trim();
+  if (!h || h.length > 253 || h.startsWith('-')) return false;
+  return /^[\w.:\-]+$/.test(h);
 }
 
 @Injectable({ providedIn: 'root' })
@@ -130,7 +177,7 @@ export class NativeService {
       this.safe(() => CellInfo.getDeviceCapabilities(), null as unknown as CapsRec)
     ]);
 
-    const cells = (cellRes.cells || []).map(c => this.mapRaw(c));
+    const cells = (cellRes.cells || []).map(mapRawCell);
     const hasNr = cells.some(c => c.tech === 'NR');
     let nrMode: 'SA' | 'NSA' | null = null;
     if (hasNr && svcRes.dataTech === 'NR') nrMode = 'SA';
@@ -140,44 +187,15 @@ export class NativeService {
     return { ts: Date.now(), fake: false, service, cells, sims: simRes.sims || [], wifi: wifiRes, caps: capsRes };
   }
 
-  private mapRaw(c: RawCell): CellRec {
-    const tech = normalizeTech(c.tech);
-    const info = resolveArfcn(tech, c.arfcn ?? null);
-    const band = c.bands && c.bands.length ? c.bands[0] : info.band;
-    const label =
-      tech === 'NR' && band != null ? `n${band}` :
-      tech === 'LTE' && band != null ? `B${band}` :
-      info.bandLabel || '';
-    return {
-      tech,
-      registered: !!c.registered,
-      timestamp: c.timestamp || Date.now(),
-      band: band ?? null,
-      bands: c.bands || [],
-      arfcn: c.arfcn ?? null,
-      freqDlMhz: info.freqDlMhz,
-      freqUlMhz: info.freqUlMhz,
-      bandwidthMhz: c.bandwidthMhz ?? null,
-      pci: c.pci ?? null,
-      cid: c.cid ?? null,
-      tac: c.tac ?? null,
-      mcc: c.mcc ?? null,
-      mnc: c.mnc ?? null,
-      rsrp: c.rsrp ?? null,
-      rsrq: c.rsrq ?? null,
-      rssi: c.rssi ?? null,
-      sinr: c.sinr ?? null,
-      dbm: c.dbm ?? null,
-      timingAdvance: c.timingAdvance ?? null,
-      bandLabel: label
-    };
-  }
-
   async ping(host: string, count = 10, size = 56): Promise<PingResult> {
-    if (this.devMode) return this.fakePing(host);
+    const clean = (host || '').trim();
+    if (!isValidPingHost(clean)) {
+      return { ok: false, host: clean, times: [], error: 'Invalid host' };
+    }
+    if (this.devMode) return this.fakePing(clean);
     return this.safe(
-      () => CellInfo.ping({ host, count, size, timeoutSec: 3 }),
-      { ok: false, host, times: [], error: 'Native ping unavailable (web preview?)' }
+      () => CellInfo.ping({ host: clean, count, size, timeoutSec: 3 }),
+      { ok: false, host: clean, times: [], error: 'Native ping unavailable (web preview?)' }
     );
   }
 

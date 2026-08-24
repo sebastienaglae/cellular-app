@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonInput, IonItem,
@@ -15,6 +15,7 @@ import { MCC_COUNTRY } from '../data/plmn-db';
 
 @Component({
   selector: 'cs-settings',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     FormsModule,

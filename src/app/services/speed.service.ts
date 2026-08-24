@@ -51,10 +51,13 @@ export class SpeedService {
       const origin = new URL(url).origin;
       const times: number[] = [];
       for (let i = 0; i < 5; i++) {
+        const ctl = new AbortController();
+        const killer = setTimeout(() => ctl.abort(), 5000);
         const t0 = performance.now();
-        await fetch(`${origin}/__down?bytes=0`, { cache: 'no-store', mode: 'cors' }).catch(() =>
-          fetch(origin, { cache: 'no-store', method: 'HEAD' })
+        await fetch(`${origin}/__down?bytes=0`, { cache: 'no-store', mode: 'cors', signal: ctl.signal }).catch(() =>
+          fetch(origin, { cache: 'no-store', method: 'HEAD', signal: ctl.signal })
         );
+        clearTimeout(killer);
         times.push(performance.now() - t0);
       }
       const avg = times.reduce((a, b) => a + b, 0) / times.length;

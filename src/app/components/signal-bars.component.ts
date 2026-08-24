@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { levelForDbm } from '../utils/view';
 
 @Component({
   selector: 'cs-signal-bars',
@@ -22,16 +23,7 @@ export class SignalBarsComponent {
   dbm = input<number | null>(null);
   bars = [0, 1, 2, 3, 4];
 
-  level = computed(() => {
-    const v = this.dbm();
-    if (v == null || !isFinite(v)) return 0;
-    if (v >= -60) return 5;
-    if (v >= -75) return 4;
-    if (v >= -85) return 3;
-    if (v >= -95) return 2;
-    if (v >= -105) return 1;
-    return 0;
-  });
+  level = computed(() => levelForDbm(this.dbm()));
 
   color = computed(() => {
     const l = this.level();

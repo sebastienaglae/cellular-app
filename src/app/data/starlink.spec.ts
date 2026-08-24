@@ -42,3 +42,15 @@ describe('Starlink detection scoring', () => {
     expect(v.level).toBe('confirmed');
   });
 });
+
+describe('starlink hardening', () => {
+  it('never throws on malformed input', () => {
+    expect(() => detectStarlink({ wifiBssid: 'not-a-mac' })).not.toThrow();
+    expect(() => detectStarlink({ operatorNumeric: 'abc!!' })).not.toThrow();
+    expect(detectStarlink({ wifiBssid: 'nope' }).ouiMatch).toBe(false);
+  });
+
+  it('short bssid strings yield no OUI', () => {
+    expect(bssidToOui('ab:cd')).toBeNull();
+  });
+});

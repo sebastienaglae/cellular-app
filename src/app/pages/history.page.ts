@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import {
   IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem,
   IonLabel, IonList, IonSegment, IonSegmentButton, IonTitle, IonToolbar,
@@ -9,10 +9,12 @@ import { trashOutline } from 'ionicons/icons';
 import { StoreService } from '../services/store.service';
 import { MapViewComponent, MapMarker } from '../components/map-view.component';
 import { SpeedResult } from '../models';
-import { haversineKm } from './speed.page';
+import { movementText } from '../utils/geo';
+import { colorForMbps } from '../utils/view';
 
 @Component({
   selector: 'cs-history',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     MapViewComponent,
@@ -134,10 +136,7 @@ export class HistoryPage implements OnInit {
     const idx = tests.findIndex(x => x.id === t.id);
     if (idx <= 0) return 'start point';
     const prev = tests[idx - 1];
-    if (!prev.geo || !t.geo) return null;
-    const km = haversineKm(prev.geo.lat, prev.geo.lon, t.geo.lat, t.geo.lon);
-    if (km < 0.05) return 'same spot as previous';
-    return `${km < 1 ? (km * 1000).toFixed(0) + ' m' : km.toFixed(1) + ' km'} from previous`;
+    return movementText(prev.geo, t.geo);
   }
 
   async clear(): Promise<void> {
@@ -154,13 +153,4 @@ export class HistoryPage implements OnInit {
   colorOf(t: SpeedResult): string {
     return colorForMbps(t.dlMbps);
   }
-}
-
-function colorForMbps(v: number | null | undefined): string {
-  if (v == null) return '#8a7f72';
-  if (v >= 100) return '#4d7c4a';
-  if (v >= 30) return '#7fa650';
-  if (v >= 10) return '#c98a2b';
-  if (v >= 3) return '#c9603f';
-  return '#b64a33';
 }
