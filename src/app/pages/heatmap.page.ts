@@ -11,7 +11,8 @@ import { StoreService } from '../services/store.service';
 import { NativeService } from '../services/native.service';
 import { I18nService } from '../services/i18n.service';
 import { MapViewComponent, HeatPoint } from '../components/map-view.component';
-import { HeatSample, bandColor, shouldSample, signalHeatCss } from '../utils/heat';
+import { HeatSample, bandColor, shouldSample } from '../utils/heat';
+import { computeHeatPoints, bandsSeen, HeatMode } from '../utils/heatmap-vm';
 
 @Component({
   selector: 'cs-heatmap',
@@ -100,7 +101,7 @@ import { HeatSample, bandColor, shouldSample, signalHeatCss } from '../utils/hea
   ]
 })
 export class HeatmapPage implements OnInit, OnDestroy {
-  mode = signal<'signal' | 'band'>('signal');
+  mode = signal<HeatMode>('signal');
   recording = signal(false);
   samples = signal<HeatSample[]>([]);
   private gpsLast: { lat: number; lon: number } | null = null;
@@ -128,20 +129,11 @@ export class HeatmapPage implements OnInit, OnDestroy {
   }
 
   bandsSeen(): string[] {
-    return [...new Set(this.samples().map(s => s.band).filter((b): b is string => !!b))].sort();
+    return bandsSeen(this.samples());
   }
 
   heatPoints(): HeatPoint[] {
-    const filter = this.bandFilter();
-    return this.samples()
-      .filter(s => (this.mode() === 'band' ? true : s.dbm != null))
-      .filter(s => !filter || s.band === filter)
-      .map(s => ({
-        lat: s.lat,
-        lon: s.lon,
-        color: this.mode() === 'signal' && s.dbm != null ? signalHeatCss(s.dbm) : bandColor(s.band || s.tech || '?'),
-        radius: this.mode() === 'signal' ? 24 : 18
-      }));
+    return computeHeatPoints(this.samples(), this.mode(), this.bandFilter());
   }
 
   bandFilter(): string {
