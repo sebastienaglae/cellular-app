@@ -95,7 +95,7 @@ interface LookupRow {
   `,
   styles: [
     `
-      .ip-line { font-size:18px; font-weight:700; font-family: ui-monospace, Menlo, Consolas, monospace; margin-bottom:6px; word-break:break-all; }
+      .ip-line { font-size:18px; font-weight:700; font-family:var(--font-mono); margin-bottom:6px; word-break:break-all; }
       .org { display:inline-flex; align-items:center; gap:8px; }
       .range { font-size:12px; padding:4px 0; border-bottom:1px dashed var(--cs-border); color:var(--ion-text-color); opacity:.82; }
       .compact-details summary { display:flex; align-items:center; justify-content:space-between; cursor:pointer; list-style:none; font-weight:700; }
