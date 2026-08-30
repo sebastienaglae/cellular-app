@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  IonBadge, IonContent, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonList,
-  IonMenuButton, IonButtons, IonNote, IonSearchbar, IonTitle, IonToolbar
+  IonBadge, IonContent, IonHeader, IonIcon, IonSearchbar, IonTitle, IonToolbar
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { idCardOutline } from 'ionicons/icons';
@@ -16,8 +15,8 @@ import { FlagComponent } from '../components/flag.component';
   standalone: true,
   imports: [
     FormsModule,
-    IonHeader, IonToolbar, IonTitle, IonButtons, IonContent,
-    IonList, IonItem, IonLabel, IonInput, IonBadge, IonNote, IonSearchbar, IonIcon, FlagComponent
+    IonHeader, IonToolbar, IonTitle, IonContent,
+    IonBadge, IonSearchbar, IonIcon, FlagComponent
   ],
   template: `
     <ion-header>
@@ -74,11 +73,7 @@ import { FlagComponent } from '../components/flag.component';
         </div>
 
         <div class="cs-card">
-          <h3>Neighbor operators (what the modem exposes)</h3>
-          <div class="cs-dim" style="margin-bottom:6px;">
-            Android does not expose other operators' PLMNs over-the-air. What IS visible:
-            neighbor cells on other bands/frequencies below - useful for mapping competing coverage.
-          </div>
+          <h3>Neighbor cells</h3>
           @if (neighbors().length) {
             @for (c of neighbors(); track $index) {
               <div class="spec-row">
@@ -112,8 +107,8 @@ import { FlagComponent } from '../components/flag.component';
       .mvno-note { font-size:12px; color:var(--ion-color-medium); margin-top:6px; opacity:0; transition:.3s; }
       .mvno-note.show { opacity:1; }
       .spec-row { display:flex; justify-content:space-between; gap:10px; padding:7px 2px; font-size:13px;
-                  border-bottom:1px dashed rgba(148,163,184,.2); }
-      ion-searchbar { padding-left:0; padding-right:0; --background: rgba(148,163,184,.2); }
+                  border-bottom:1px dashed var(--cs-border); }
+      ion-searchbar { padding-left:0; padding-right:0; --background: var(--cs-accent-soft); }
     `
   ]
 })

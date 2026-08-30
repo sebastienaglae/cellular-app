@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  IonButton, IonContent, IonHeader, IonIcon, IonItem, IonLabel,
+  IonButton, IonContent, IonHeader, IonIcon, IonLabel,
   IonSegment, IonSegmentButton, IonTitle, IonToolbar, ToastController
 } from '@ionic/angular/standalone';
 import { Geolocation } from '@capacitor/geolocation';
@@ -21,7 +21,7 @@ import { computeHeatPoints, bandsSeen, HeatMode } from '../utils/heatmap-vm';
   imports: [
     FormsModule, MapViewComponent,
     IonHeader, IonToolbar, IonTitle, IonContent, IonIcon, IonButton,
-    IonSegment, IonSegmentButton, IonItem, IonLabel
+    IonSegment, IonSegmentButton, IonLabel
   ],
   template: `
     <ion-header>
@@ -33,8 +33,8 @@ import { computeHeatPoints, bandsSeen, HeatMode } from '../utils/heatmap-vm';
       <div class="cs-page">
         <div class="cs-card controls">
           <ion-segment [value]="mode()" (ionChange)="mode.set($any($event.detail.value))" class="seg">
-            <ion-segment-button value="signal"><ion-label>{{ t('Signal strength') }}</ion-label></ion-segment-button>
-            <ion-segment-button value="band"><ion-label>{{ t('Frequency bands') }}</ion-label></ion-segment-button>
+            <ion-segment-button value="signal"><ion-label>{{ t('Signal') }}</ion-label></ion-segment-button>
+            <ion-segment-button value="band"><ion-label>{{ t('Bands') }}</ion-label></ion-segment-button>
           </ion-segment>
 
           <div class="ctl-row">

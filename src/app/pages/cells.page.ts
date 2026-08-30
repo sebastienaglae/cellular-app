@@ -1,10 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
-import {
-  IonBadge, IonContent, IonHeader, IonItem, IonLabel, IonList,
-  IonMenuButton, IonNote, IonButtons, IonTitle, IonToolbar
-} from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { homeOutline } from 'ionicons/icons';
+import { IonContent, IonHeader, IonTitle, IonToolbar } from '@ionic/angular/standalone';
 import { NativeService, Snapshot } from '../services/native.service';
 import { StoreService } from '../services/store.service';
 import { I18nService } from '../services/i18n.service';
@@ -17,8 +12,7 @@ import { SignalBarsComponent } from '../components/signal-bars.component';
   standalone: true,
   imports: [
     SignalBarsComponent,
-    IonHeader, IonToolbar, IonTitle, IonButtons, IonMenuButton, IonContent,
-    IonList, IonItem, IonLabel, IonBadge, IonNote
+    IonHeader, IonToolbar, IonTitle, IonContent
   ],
   template: `
     <ion-header>
@@ -28,9 +22,6 @@ import { SignalBarsComponent } from '../components/signal-bars.component';
     </ion-header>
     <ion-content>
       <div class="cs-page">
-        <div class="cs-dim" style="margin-bottom:8px;">
-          {{ t('Serving + neighbor cells reported by the modem. Neighbors let you see what else is on air nearby.') }}
-        </div>
         @if (native.platform === 'ios') {
           <div class="cs-card" style="border-color: var(--cs-accent);">
             <h3>iOS</h3>
@@ -42,7 +33,7 @@ import { SignalBarsComponent } from '../components/signal-bars.component';
             <div class="head" (click)="toggle(i)">
               <span class="tech">{{ c.tech }}</span>
               <span class="band">{{ c.bandLabel || '?' }}</span>
-              @if (c.registered) { <ion-badge color="success">serving</ion-badge> }
+              @if (c.registered) { <span class="cs-badge ok">{{ t('serving') }}</span> }
               <span style="flex:1"></span>
               <cs-signal-bars [dbm]="c.dbm ?? c.rsrp"></cs-signal-bars>
               <span class="chev">{{ open() === i ? '▾' : '▸' }}</span>
@@ -95,9 +86,7 @@ export class CellsPage implements OnInit, OnDestroy {
 
   t = (k: string, p?: Record<string, string | number>) => this.i18n.t(k, p);
 
-  constructor(public native: NativeService, private store: StoreService, public i18n: I18nService) {
-    addIcons({ homeOutline });
-  }
+  constructor(public native: NativeService, private store: StoreService, public i18n: I18nService) {}
 
   ngOnInit(): void {
     this.poll();

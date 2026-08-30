@@ -8,6 +8,7 @@ export const routes: Routes = [
   { path: 'operators', loadComponent: () => import('./pages/operators.page').then(m => m.OperatorsPage) },
   { path: 'speed', loadComponent: () => import('./pages/speed.page').then(m => m.SpeedPage) },
   { path: 'ping', loadComponent: () => import('./pages/ping.page').then(m => m.PingPage) },
+  { path: 'route', loadComponent: () => import('./pages/route.page').then(m => m.RoutePage) },
   { path: 'ipinfo', loadComponent: () => import('./pages/ipinfo.page').then(m => m.IpInfoPage) },
   { path: 'ookla', loadComponent: () => import('./pages/ookla.page').then(m => m.OoklaPage) },
   { path: 'history', loadComponent: () => import('./pages/history.page').then(m => m.HistoryPage) },

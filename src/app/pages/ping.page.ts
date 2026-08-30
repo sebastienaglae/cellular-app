@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonInput,
-  IonItem, IonLabel, IonList, IonMenuButton, IonNote, IonSegment,
-  IonSegmentButton, IonTitle, IonToolbar, ToastController
+  IonButton, IonContent, IonHeader, IonIcon, IonInput,
+  IonItem, IonLabel, IonSegment, IonSegmentButton, IonTitle, IonToolbar, ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { playOutline, stopOutline } from 'ionicons/icons';
@@ -18,8 +17,8 @@ import { pingStats } from '../utils/ping-stats';
   standalone: true,
   imports: [
     FormsModule,
-    IonHeader, IonToolbar, IonTitle, IonButtons, IonContent,
-    IonItem, IonInput, IonButton, IonIcon, IonNote, IonSegment, IonSegmentButton, IonLabel, IonList
+    IonHeader, IonToolbar, IonTitle, IonContent,
+    IonItem, IonInput, IonButton, IonIcon, IonSegment, IonSegmentButton, IonLabel
   ],
   template: `
     <ion-header>
@@ -55,7 +54,7 @@ import { pingStats } from '../utils/ping-stats';
             <ion-item lines="none">
               <ion-input label="Host / IP" labelPlacement="stacked" [(ngModel)]="host" [disabled]="running()"></ion-input>
             </ion-item>
-            <div class="presets">
+            <div class="presets" aria-label="Destinations">
               @for (p of presets; track p) {
                 <button class="chip-btn" [disabled]="running()" (click)="host = p">{{ p }}</button>
               }
@@ -64,7 +63,7 @@ import { pingStats } from '../utils/ping-stats';
               <ion-button expand="block" (click)="start()">
                 <ion-icon slot="start" name="play-outline"></ion-icon> START LIVE PING
               </ion-button>
-            }
+            } @else if (times().length) { }
             @if (times().length >= 2) {
               <div class="stats">
                 <div><span class="cs-dim">AVG</span><b>{{ fmt(stats().avg) }}</b></div>
@@ -76,9 +75,6 @@ import { pingStats } from '../utils/ping-stats';
             }
           </div>
 
-          <div class="cs-dim" style="text-align:center;">
-            Continuous 1-packet probes while running. Sessions are saved to History automatically.
-          </div>
         } @else {
           <div class="cs-card">
             <div class="hist-head">

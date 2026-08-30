@@ -707,5 +707,78 @@ public class CellInfoPlugin extends Plugin {
             call.resolve(o);
         }
     }
-}
 
+    /**
+     * UDP/TCP traceroute binaries are absent on many Android images. Progressive
+     * TTL probing through /system/bin/ping provides the same path while staying
+     * compatible with stock devices.
+     */
+    @PluginMethod
+    public void traceRoute(PluginCall call) {
+        String host = call.getString("host", "1.1.1.1");
+        if (!PingParser.isValidHost(host)) {
+            call.reject("invalid host");
+            return;
+        }
+        int maxHops = Math.min(30, Math.max(1, call.getInt("maxHops", 20)));
+        final String target = host.trim();
+        new Thread(() -> {
+            java.util.regex.Pattern ipPattern = java.util.regex.Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+)");
+            java.util.regex.Pattern msPattern = java.util.regex.Pattern.compile("time[=<]([0-9.]+)");
+            for (int ttl = 1; ttl <= maxHops; ttl++) {
+                JSObject event = new JSObject();
+                try {
+                    ProcessBuilder pb = new ProcessBuilder(
+                        "/system/bin/ping", "-c", "1", "-n", "-W", "2",
+                        "-t", String.valueOf(ttl), target
+                    );
+                    pb.redirectErrorStream(true);
+                    Process process = pb.start();
+                    StringBuilder raw = new StringBuilder();
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) raw.append(line).append('\n');
+                    }
+                    process.waitFor(3, java.util.concurrent.TimeUnit.SECONDS);
+                    process.destroyForcibly();
+
+                    String text = raw.toString();
+                    java.util.regex.Matcher ipMatcher = ipPattern.matcher(text);
+                    // The first address after the header is either the hop or destination.
+                    boolean found = false;
+                    while (ipMatcher.find()) {
+                        if (!ipMatcher.group().equals(target)) { found = true; break; }
+                    }
+                    if (!found && ttl > 1) ipMatcher.reset();
+                    if (!ipMatcher.find()) continue;
+
+                    String ip = ipMatcher.group(1);
+                    String hostname = null;
+                    try {
+                        java.net.InetAddress address = java.net.InetAddress.getByName(ip);
+                        String resolved = address.getHostName();
+                        if (!resolved.equals(ip)) hostname = resolved;
+                    } catch (Throwable ignored) {
+                    }
+
+                    Double ms = null;
+                    java.util.regex.Matcher msMatcher = msPattern.matcher(text);
+                    if (msMatcher.find()) ms = Double.parseDouble(msMatcher.group(1));
+
+                    JSObject hop = new JSObject();
+                    hop.put("hop", ttl);
+                    hop.put("ip", ip);
+                    hop.put("hostname", hostname);
+                    hop.put("ms", ms);
+                    event.put("hop", hop);
+                } catch (Throwable ignored) {
+                }
+                notifyListeners("traceEvent", event);
+                if (event.has("hop") && target.equals(((JSObject) event.get("hop")).getString("ip"))) break;
+            }
+            JSObject done = new JSObject();
+            done.put("done", true);
+            notifyListeners("traceEvent", done);
+        }, "CellScopeTrace").start();
+    }
+}

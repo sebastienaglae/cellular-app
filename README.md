@@ -2,6 +2,19 @@
 
 **An offline-first cellular & network inspector for Android** — see every detail of your radio connection: 5G SA/NSA, LTE bands and exact frequencies, neighbor cells, Wi-Fi, operator/MVNO identity, satellite (Starlink) detection, live ping, speed tests with GPS tagging, and per-country spectrum ownership. No cloud, no account, no tracking: everything is computed and stored on the device.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/dashboard.png" alt="CellScope signal dashboard" width="260"><br><sub>Signal dashboard</sub></td>
+    <td align="center"><img src="docs/screenshots/spectrum.png" alt="CellScope spectrum browser" width="260"><br><sub>Spectrum browser</sub></td>
+    <td align="center"><img src="docs/screenshots/speed.png" alt="CellScope speed test" width="260"><br><sub>Speed test</sub></td>
+    <td align="center"><img src="docs/screenshots/heatmap.png" alt="CellScope signal heatmap" width="260"><br><sub>Signal heatmap</sub></td>
+  </tr>
+</table>
+
+All screenshots use CellScope's built-in synthetic-data mode.
+
 ## Features
 
 ### Radio monitoring
@@ -55,7 +68,7 @@ Requirements: Node 20+, JDK 21 (Gradle 8.11 refuses newer), Android SDK 35. For 
 
 ```bash
 npm install
-npm test              # 79 unit tests (73 TypeScript + 6 Java)
+npm test              # 121 TypeScript unit tests
 npm run build         # web bundle + offline assets
 npx cap sync android  # also: npx cap sync ios
 cd android && ./gradlew assembleDebug

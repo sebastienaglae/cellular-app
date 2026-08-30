@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
-  IonBadge, IonButton, IonButtons, IonContent, IonHeader, IonIcon,
-  IonLabel, IonNote, IonRefresher, IonRefresherContent, IonTitle, IonToolbar
+  IonButton, IonButtons, IonContent, IonHeader, IonIcon,
+  IonNote, IonRefresher, IonRefresherContent, IonTitle, IonToolbar
 } from '@ionic/angular/standalone';
 import { Geolocation } from '@capacitor/geolocation';
 import { addIcons } from 'ionicons';
@@ -25,15 +25,14 @@ import { FlagComponent } from '../components/flag.component';
   imports: [
     SignalBarsComponent, SparklineComponent, RouterLink, MapViewComponent, FlagComponent,
     IonHeader, IonToolbar, IonTitle, IonButtons, IonContent,
-    IonRefresher, IonRefresherContent, IonBadge, IonIcon, IonNote,
-    IonButton, IonLabel
+    IonRefresher, IonRefresherContent, IonIcon, IonNote, IonButton
   ],
   template: `
     <ion-header>
       <ion-toolbar>
         <ion-title>CellScope</ion-title>
         <ion-buttons slot="end">
-          @if (snap()?.fake) { <span class="cs-badge dev" style="margin-right:8px;">{{ t('DEV MODE — SIMULATED RESULTS') }}</span> }
+          @if (snap()?.fake) { <span class="cs-badge dev demo-badge">SYNTHETIC DATA</span> }
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -62,14 +61,14 @@ import { FlagComponent } from '../components/flag.component';
         }
 
         @if (starlink().level !== 'none') {
-          <div class="cs-card" [style.border-color]="'#d97757'">
-            <h3><ion-icon name="alert-circle-outline"></ion-icon> {{ t('Satellite / Starlink') }}</h3>
-            <div style="font-weight:700; margin-bottom:4px;">
-              {{ starlink().level === 'confirmed' ? t('Starlink link detected') : t('Possible satellite connection') + ' (' + starlink().level + ')' }}
+          <div class="mb-3 flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-500/20 dark:bg-blue-500/10">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white dark:bg-blue-500">
+              <ion-icon name="alert-circle-outline" class="text-lg"></ion-icon>
             </div>
-            <ul class="reasons">
-              @for (r of starlink().reasons; track $index) { <li>{{ r }}</li> }
-            </ul>
+            <div class="min-w-0">
+              <div class="text-xs font-medium text-blue-600 dark:text-blue-300">{{ t('Satellite / Starlink') }}</div>
+              <div class="truncate text-sm font-semibold text-zinc-950 dark:text-white">{{ t('Starlink link detected') }}</div>
+            </div>
           </div>
         }
 
@@ -95,20 +94,16 @@ import { FlagComponent } from '../components/flag.component';
             }
 
             <div class="kv-row">
-              <div><span class="cs-dim">{{ t('Band') }}</span><br /><b>{{ s.bandLabel || '?' }}</b></div>
-              <div><span class="cs-dim">{{ t('DL freq') }}</span><br /><b>{{ fmtMhz(s.freqDlMhz) }}</b></div>
-              <div><span class="cs-dim">{{ t('UL freq') }}</span><br /><b>{{ fmtMhz(s.freqUlMhz) }}</b></div>
-            </div>
-            <div class="kv-row">
               <div><span class="cs-dim">RSRP</span><br /><b>{{ s.rsrp ?? '—' }} dBm</b></div>
               <div><span class="cs-dim">RSRQ</span><br /><b>{{ s.rsrq ?? '—' }} dB</b></div>
               <div><span class="cs-dim">SINR</span><br /><b>{{ s.sinr ?? '—' }} dB</b></div>
             </div>
-            <div class="kv-row">
-              <div><span class="cs-dim">PCI</span><br /><b>{{ s.pci ?? '—' }}</b></div>
-              <div><span class="cs-dim">TAC</span><br /><b>{{ s.tac ?? '—' }}</b></div>
-              <div><span class="cs-dim">CID</span><br /><b>{{ s.cid ?? '—' }}</b></div>
-            </div>
+            <details class="tech-details">
+              <summary>{{ t('Technical details') }}</summary>
+              <div class="cs-kv"><span class="k">{{ t('Band') }}</span><span class="v">{{ s.bandLabel || '?' }}</span></div>
+              <div class="cs-kv"><span class="k">{{ t('UL freq') }}</span><span class="v">{{ fmtMhz(s.freqUlMhz) }}</span></div>
+              <div class="cs-kv"><span class="k">PCI · TAC · CID</span><span class="v cs-mono">{{ s.pci ?? '—' }} · {{ s.tac ?? '—' }} · {{ s.cid ?? '—' }}</span></div>
+            </details>
             @if (rsrpHist().length > 2) {
               <div class="chart-box"><cs-sparkline [data]="rsrpHist()" color="#4d7c4a" [fill]="true" /></div>
               <div class="cs-dim" style="text-align:center;">{{ t('RSRP trend') }} ({{ rsrpHist().length }})</div>
@@ -180,12 +175,12 @@ import { FlagComponent } from '../components/flag.component';
     `
       .serving-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
       .tech-badge { font-weight:800; font-size:18px; letter-spacing:.02em; }
-      .freq-hero { display:flex; align-items:baseline; justify-content:center; gap:8px;
-                   padding:10px 0 14px; border-bottom:1px dashed var(--cs-border); margin-bottom:6px; }
-      .freq-num { font-size:46px; font-weight:800; font-family:var(--font-serif);
+      .freq-hero { display:flex; align-items:baseline; justify-content:center; gap:8px; flex-wrap:wrap;
+                   padding:12px 0 14px; border-bottom:1px dashed var(--cs-border); margin-bottom:6px; }
+      .freq-num { font-size:46px; font-weight:800; font-family:var(--font-sans);
                   font-variant-numeric:tabular-nums; color:var(--cs-accent-fg); line-height:1; }
       .freq-unit { font-size:16px; font-weight:700; color:var(--ion-color-medium); }
-      .freq-sub { font-size:11px; color:var(--ion-color-medium); align-self:flex-end; padding-bottom:6px; }
+      .freq-sub { flex-basis:100%; text-align:center; font-size:11px; color:var(--ion-color-medium); }
       .kv-row { display:flex; justify-content:space-between; gap:6px; padding:6px 0;
                 border-bottom:1px dashed var(--cs-border); }
       .kv-row:last-of-type { border-bottom:none; }
@@ -201,6 +196,17 @@ import { FlagComponent } from '../components/flag.component';
       .perm-list li { margin-bottom: 8px; }
       .perm-list b { font-weight: 600; }
       .perm-actions { display: flex; gap: 10px; }
+      .tech-details { margin-top:8px; }
+      .tech-details summary { cursor:pointer; list-style:none; text-align:center; padding:9px 0 2px;
+                              font-size:11px; font-weight:600; color:var(--ion-color-medium); }
+      .tech-details summary::-webkit-details-marker { display:none; }
+      .demo-badge { margin-right: 10px; white-space: nowrap; }
+      @media (max-width: 430px) {
+        .freq-num { font-size: 43px; }
+        .kv-row { gap: 2px; }
+        .kv-row b { font-size: 13px; }
+        .demo-badge { font-size: 9px; padding-inline: 8px; }
+      }
     `
   ]
 })

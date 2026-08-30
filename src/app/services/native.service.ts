@@ -5,6 +5,7 @@ import {
   CapsRec, CellRec, PingResult, Rat, ServiceRec, SimRec, WifiRec
 } from '../models';
 import { resolveArfcn } from '../data/bands';
+import { TraceEvent } from '../tracing';
 
 export interface RawCell {
   tech: string;
@@ -43,6 +44,7 @@ interface CellInfoPluginApi {
   getWifiInfo(): Promise<WifiRec>;
   getDeviceCapabilities(): Promise<CapsRec>;
   ping(opts: { host: string; count: number; size: number; timeoutSec: number }): Promise<PingResult & { raw?: string }>;
+  traceRoute(opts: { host: string; maxHops?: number }, callback: (event: TraceEvent) => void): void;
 }
 
 const stub = (): never => {
@@ -220,6 +222,24 @@ export class NativeService {
       () => CellInfo.ping({ host: clean, count, size, timeoutSec: 3 }),
       { ok: false, host: clean, times: [], error: 'Native ping unavailable (web preview?)' }
     );
+  }
+
+  async traceroute(host: string, onHop: (hop: TraceEvent['hop']) => void, maxHops = 20): Promise<void> {
+    const clean = (host || '').trim();
+    if (!isValidPingHost(clean)) throw new Error('Invalid host');
+    if (this.devMode) {
+      const orgs = ['Local Gateway', 'NTT Communications', 'IIJ', 'Cloudflare'];
+      const ccs = ['', 'jp', 'jp', 'us'];
+      for (let hop = 1; hop <= Math.min(maxHops, 4); hop++) {
+        await new Promise(resolve => setTimeout(resolve, 350));
+        onHop({ hop, ip: `10.0.0.${hop + 1}`, hostname: `hop-${hop}.example.net`, ms: 3 * hop + this.rnd(0, 5), asn: hop === 1 ? null : [2497, 2497, 13335][hop - 2], org: orgs[hop - 1], country: ccs[hop - 1] || null, network: orgs[hop - 1] });
+      }
+      onHop(undefined);
+      return;
+    }
+    CellInfo.traceRoute({ host: clean, maxHops }, event => {
+      if (event.hop) onHop(event.hop);
+    });
   }
 
   /* ------------------------- DEV MODE FAKE DATA ------------------------- */

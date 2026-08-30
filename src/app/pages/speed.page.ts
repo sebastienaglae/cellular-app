@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  IonButton, IonContent, IonHeader, IonIcon, IonItem, IonLabel,
-  IonMenuButton, IonButtons, IonNote, IonTitle, IonToggle, IonToolbar, ToastController
+  IonButton, IonContent, IonHeader, IonIcon, IonItem,
+  IonTitle, IonToggle, IonToolbar, ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { playOutline, stopOutline, timerOutline } from 'ionicons/icons';
@@ -15,7 +15,6 @@ import { SpeedService } from '../services/speed.service';
 import { StoreService } from '../services/store.service';
 import { NativeService } from '../services/native.service';
 import { SpeedResult } from '../models';
-import { FlagComponent } from '../components/flag.component';
 import { I18nService } from '../services/i18n.service';
 
 @Component({
@@ -23,9 +22,9 @@ import { I18nService } from '../services/i18n.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
-    FormsModule, FlagComponent,
-    IonHeader, IonToolbar, IonTitle, IonButtons, IonContent,
-    IonButton, IonIcon, IonNote, IonToggle, IonItem, IonLabel
+    FormsModule,
+    IonHeader, IonToolbar, IonTitle, IonContent,
+    IonButton, IonIcon, IonToggle, IonItem
   ],
   template: `
     <ion-header>
@@ -65,7 +64,7 @@ import { I18nService } from '../services/i18n.service';
           </div>
 
           @if (!running()) {
-            <ion-button expand="block" [disabled]="busy()" (click)="run(false)" class="start-btn">
+            <ion-button expand="block" [disabled]="speed.busy" (click)="run(false)" class="start-btn">
               <ion-icon slot="start" name="play-outline"></ion-icon>
               {{ last() ? 'RUN AGAIN' : 'START TEST' }}
             </ion-button>
@@ -78,9 +77,9 @@ import { I18nService } from '../services/i18n.service';
 
         @if (last(); as l) {
           <div class="res-grid">
-            <div class="res"><span class="cs-dim">DOWN</span><b class="v-dl">{{ l.dlMbps != null ? fmtNum(l.dlMbps) : '—' }}</b><span class="cs-dim">Mbps</span></div>
-            <div class="res"><span class="cs-dim">UP</span><b class="v-ul">{{ l.ulMbps != null ? fmtNum(l.ulMbps) : '—' }}</b><span class="cs-dim">Mbps</span></div>
-            <div class="res"><span class="cs-dim">LATENCY</span><b>{{ l.latencyMs != null ? fmtNum(l.latencyMs) : '—' }}</b><span class="cs-dim">ms</span></div>
+            <div class="res"><span class="cs-dim">DOWN</span><strong class="v-dl">{{ metric(l.dlMbps) }}</strong><span class="cs-dim">Mbps</span></div>
+            <div class="res"><span class="cs-dim">UP</span><strong class="v-ul">{{ metric(l.ulMbps) }}</strong><span class="cs-dim">Mbps</span></div>
+            <div class="res"><span class="cs-dim">LATENCY</span><strong>{{ metric(l.latencyMs) }}</strong><span class="cs-dim">ms</span></div>
           </div>
           @if (l.geo) {
             <div class="cs-card loc-card">
@@ -136,7 +135,7 @@ import { I18nService } from '../services/i18n.service';
       .res-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
       .res { background: var(--cs-surface); border: 1px solid var(--cs-border); border-radius: 14px;
              padding: 12px 6px; text-align: center; display: flex; flex-direction: column; gap: 3px; }
-      .res b { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+      .res strong { display:block; min-height:27px; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
       .v-dl { color: var(--cs-accent-fg); } .v-ul { color: var(--cs-ok-fg); }
       .loc-card { padding: 12px 14px; }
       .loc-row { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px;
@@ -192,6 +191,10 @@ export class SpeedPage implements OnInit, OnDestroy {
 
   fmtNum(v: number): string {
     return v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+  }
+
+  metric(v: number | null): string {
+    return v == null ? '—' : this.fmtNum(v);
   }
 
   movedText(l: SpeedResult): string | null {

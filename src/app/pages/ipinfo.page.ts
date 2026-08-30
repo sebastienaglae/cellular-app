@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  IonBadge, IonButton, IonButtons, IonContent, IonHeader, IonIcon,
-  IonInput, IonItem, IonLabel, IonMenuButton, IonNote, IonTitle, IonToolbar, ToastController
+  IonButton, IonContent, IonHeader, IonIcon,
+  IonTitle, IonToolbar, ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { cloudOutline, downloadOutline, planetOutline, searchOutline } from 'ionicons/icons';
-import { IpInfoService, IpInfo } from '../services/ipinfo.service';
+import { IpInfoService, IpInfo, enrichIp } from '../services/ipinfo.service';
 import { NativeService } from '../services/native.service';
 import { FlagComponent } from '../components/flag.component';
 
@@ -22,8 +22,7 @@ interface LookupRow {
   standalone: true,
   imports: [
     FormsModule, FlagComponent,
-    IonHeader, IonToolbar, IonTitle, IonButtons, IonMenuButton, IonContent,
-    IonButton, IonIcon, IonNote, IonItem, IonInput, IonBadge, IonLabel
+    IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon
   ],
   template: `
     <ion-header>
@@ -37,7 +36,7 @@ interface LookupRow {
           <div class="cs-card">
             <div class="cs-empty">
               Offline IP database not loaded yet.<br />
-              {{ svc.loading() ? 'Loading bundled database…' : 'Tap LOAD to enable lookups.' }}
+              {{ svc.loading() ? 'Preparing offline intelligence…' : 'Offline intelligence unavailable. Reopen to retry.' }}
             </div>
             @if (!svc.loading()) {
               <ion-button expand="block" (click)="load()">
@@ -60,16 +59,6 @@ interface LookupRow {
             </div>
           </div>
 
-          <div class="cs-card">
-            <h3><ion-icon name="search-outline"></ion-icon> Lookup</h3>
-            <ion-item lines="none">
-              <ion-input label="Any IP" labelPlacement="stacked" [(ngModel)]="manualIp" placeholder="e.g. 9.161.0.10 or 2606:4700::1"></ion-input>
-            </ion-item>
-            <ion-button size="small" fill="outline" (click)="lookup(manualIp, 'Manual')">
-              <ion-icon slot="start" name="search-outline"></ion-icon> Resolve
-            </ion-button>
-          </div>
-
           @for (row of rows(); track row.ip + row.label) {
             <div class="cs-card">
               <h3>{{ row.label }}</h3>
@@ -83,6 +72,7 @@ interface LookupRow {
                   </span>
                 </div>
                 <div class="cs-kv"><span class="k">ASN</span><span class="v">{{ i.asn != null ? 'AS' + i.asn : '—' }}</span></div>
+                <div class="cs-kv"><span class="k">Network</span><span class="v">{{ networkName(i) }}</span></div>
                 <div class="cs-kv"><span class="k">Country</span><span class="v">{{ i.cc }}</span></div>
                 @if (i.starlink) {
                   <div style="margin-top:8px;"><span class="cs-badge ok">STARLINK RANGE — AS14593</span></div>
@@ -93,21 +83,12 @@ interface LookupRow {
             </div>
           }
 
-          <div class="cs-card">
-            <h3><ion-icon name="planet-outline"></ion-icon> Starlink public ranges</h3>
-            @if (starlinkRanges().length) {
-              <div class="cs-dim" style="margin-bottom:6px;">AS14593 SPACEX-STARLINK blocks present in the loaded DB:</div>
-              @for (r of starlinkRanges(); track r) {
-                <div class="range cs-mono">{{ r }}</div>
-              }
-            } @else {
-              <div class="cs-empty">None found in current DB version</div>
+          <details class="cs-card compact-details">
+            <summary><span><ion-icon name="planet-outline"></ion-icon> Starlink IP ranges</span><span>{{ starlinkRanges().length }}</span></summary>
+            @for (r of starlinkRanges(); track r) {
+              <div class="range cs-mono">{{ r }}</div>
             }
-          </div>
-
-          <ion-note class="foot">
-            Data: iptoasn.com (PDDL), bundled at build time. Refresh tools/build-ipdb.mjs to update.
-          </ion-note>
+          </details>
         }
       </div>
     </ion-content>
@@ -116,8 +97,11 @@ interface LookupRow {
     `
       .ip-line { font-size:18px; font-weight:700; font-family: ui-monospace, Menlo, Consolas, monospace; margin-bottom:6px; word-break:break-all; }
       .org { display:inline-flex; align-items:center; gap:8px; }
-      .range { font-size:12px; padding:4px 0; border-bottom:1px dashed rgba(148,163,184,.2); color:#cfd6e4; }
-      .foot { display:block; text-align:center; font-size:11px; margin-top:10px; }
+      .range { font-size:12px; padding:4px 0; border-bottom:1px dashed var(--cs-border); color:var(--ion-text-color); opacity:.82; }
+      .compact-details summary { display:flex; align-items:center; justify-content:space-between; cursor:pointer; list-style:none; font-weight:700; }
+      .compact-details summary span:first-child { display:flex; align-items:center; gap:8px; }
+      .compact-details summary::-webkit-details-marker { display:none; }
+      .compact-details[open] summary { margin-bottom:12px; }
     `
   ]
 })
@@ -137,11 +121,15 @@ export class IpInfoPage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    await this.load();
-    if (this.svc.loaded()) {
+    const loaded = await this.svc.ensureLoaded();
+    if (loaded) {
       this.starlinkRanges.set(this.svc.starlinkRanges(15));
       this.checkPublic();
     }
+  }
+
+  networkName(info: IpInfo): string {
+    return enrichIp(info).networkName;
   }
 
   async load(): Promise<void> {

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import {
-  IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonItem,
+  IonButton, IonButtons, IonContent, IonHeader, IonIcon,
   IonLabel, IonList, IonSegment, IonSegmentButton, IonTitle, IonToolbar,
   ToastController
 } from '@ionic/angular/standalone';
@@ -20,7 +20,7 @@ import { I18nService } from '../services/i18n.service';
   imports: [
     MapViewComponent,
     IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
-    IonSegment, IonSegmentButton, IonList, IonItem, IonLabel,
+    IonSegment, IonSegmentButton, IonList, IonLabel,
     IonButton, IonIcon
   ],
   template: `

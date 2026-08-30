@@ -1,12 +1,10 @@
 import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonInput, IonItem,
-  IonLabel, IonList, IonMenuButton, IonNote, IonSelect, IonSelectOption,
+  IonButton, IonContent, IonHeader, IonInput, IonItem,
+  IonNote, IonSelect, IonSelectOption,
   IonTitle, IonToggle, IonToolbar, ToastController
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { keyOutline } from 'ionicons/icons';
 import { StoreService, AppSettings, DEFAULT_SETTINGS } from '../services/store.service';
 import { NativeService } from '../services/native.service';
 import { SpeedService } from '../services/speed.service';
@@ -19,8 +17,8 @@ import { MCC_COUNTRY } from '../data/plmn-db';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
-    IonHeader, IonToolbar, IonTitle, IonButtons, IonMenuButton, IonContent,
-    IonList, IonItem, IonLabel, IonToggle, IonInput, IonButton, IonIcon,
+    IonHeader, IonToolbar, IonTitle, IonContent,
+    IonItem, IonToggle, IonInput, IonButton,
     IonNote, IonSelect, IonSelectOption
   ],
   template: `
@@ -86,8 +84,8 @@ import { MCC_COUNTRY } from '../data/plmn-db';
           </ion-item>
         </div>
 
-        <div class="cs-card">
-          <h3>{{ t('Speed endpoints (used online only)') }}</h3>
+        <details class="cs-card settings-details">
+          <summary>{{ t('Advanced speed endpoints') }}</summary>
           <ion-item lines="none">
             <ion-input [label]="t('Download URL')" labelPlacement="stacked" [ngModel]="s().dlUrl" (ngModelChange)="save({ dlUrl: $event })"></ion-input>
           </ion-item>
@@ -98,7 +96,7 @@ import { MCC_COUNTRY } from '../data/plmn-db';
             <ion-input [label]="t('Ookla page URL')" labelPlacement="stacked" [ngModel]="s().ooklaUrl" (ngModelChange)="save({ ooklaUrl: $event })"></ion-input>
           </ion-item>
           <div class="cs-dim pad8">{{ t('Default: Cloudflare speed endpoints. Replace with any HTTP endpoint that streams bytes.') }}</div>
-        </div>
+        </details>
 
         <div class="cs-card">
           <h3>{{ t('About') }}</h3>
@@ -115,6 +113,9 @@ import { MCC_COUNTRY } from '../data/plmn-db';
   styles: [
     `
       .pad8 { padding:0 8px 4px; }
+      .settings-details summary { cursor:pointer; list-style:none; font-weight:700; }
+      .settings-details summary::-webkit-details-marker { display:none; }
+      .settings-details[open] summary { margin-bottom:12px; }
     `
   ]
 })
@@ -137,9 +138,7 @@ export class SettingsPage implements OnInit {
     private native: NativeService,
     private speed: SpeedService,
     private toast: ToastController
-  ) {
-    addIcons({ keyOutline });
-  }
+  ) {}
 
   ngOnInit(): void {
     this.devMode = this.store.settings.devMode;

@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import {
   IonButton, IonButtons, IonContent, IonHeader, IonIcon,
-  IonNote, IonTitle, IonToolbar
+  IonTitle, IonToolbar
 } from '@ionic/angular/standalone';
 import { Browser } from '@capacitor/browser';
 import { addIcons } from 'ionicons';
@@ -20,7 +20,7 @@ import { NativeService } from '../services/native.service';
   standalone: true,
   imports: [
     IonHeader, IonToolbar, IonTitle, IonButtons, IonContent,
-    IonButton, IonIcon, IonNote
+    IonButton, IonIcon
   ],
   template: `
     <ion-header>
@@ -34,23 +34,15 @@ import { NativeService } from '../services/native.service';
     <ion-content>
       <div class="hero">
         <div class="mark"><ion-icon name="speedometer-outline"></ion-icon></div>
-        <h1>Run the official Ookla test</h1>
-        <p class="sub">
-          speedtest.net refuses to be embedded inside other apps
-          (ERR_BLOCKED_BY_RESPONSE), so CellScope opens it in a secure
-          in-app browser tab instead. Results stay between you and Ookla.
-        </p>
+        <h1>Ookla Speedtest</h1>
+        <p class="sub">Opens securely in a browser.</p>
         <ion-button size="large" (click)="open(store.settings.ooklaUrl)">
           <ion-icon slot="start" name="open-outline"></ion-icon>
           Open speedtest.net
         </ion-button>
         <ion-button size="small" fill="outline" (click)="open('https://fast.com')">
-          fast.com (Netflix) alternative
+          Open fast.com
         </ion-button>
-        <ion-note class="hint">
-          For fully offline-logged tests use the built-in Speed tab —
-          it saves results with GPS, band and operator on this device.
-        </ion-note>
         @if (lastFake()) {
           <div class="cs-badge dev" style="margin-top:14px;">DEV MODE — real site still opens, fake numbers live in the Speed tab</div>
         }
@@ -66,7 +58,6 @@ import { NativeService } from '../services/native.service';
       .mark ion-icon { font-size:44px; color:var(--cs-accent-fg); }
       h1 { font-size:24px; margin:0 0 10px; }
       .sub { color:var(--ion-color-medium); font-size:14px; line-height:1.55; margin:0 0 24px; }
-      .hint { font-size:11.5px; margin-top:18px; }
       ion-button { margin-bottom:10px; }
     `
   ]

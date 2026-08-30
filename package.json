@@ -43,6 +43,9 @@
     "@angular/compiler-cli": "^19.2.0",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.0.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
     "typescript": "~5.8.2",
     "vitest": "^4.1.11"
   }

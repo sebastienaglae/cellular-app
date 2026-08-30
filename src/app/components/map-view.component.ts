@@ -29,8 +29,11 @@ export interface MapMarker {
   template: `<canvas #cv></canvas>`,
   styles: [
     `
-      :host { display:block; width:100%; height:100%; min-height:220px; touch-action:none; overflow:hidden; border-radius:14px; }
-      canvas { width:100%; height:100%; display:block; cursor:grab; }
+      :host { display:block; position:relative; width:100%; height:100%; min-height:220px; touch-action:none; overflow:hidden; border:1px solid var(--cs-border); }
+      :host::after { content:''; position:absolute; inset:0; pointer-events:none; opacity:.16;
+        background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);
+        background-size:32px 32px; mix-blend-mode:overlay; }
+      canvas { width:100%; height:100%; display:block; cursor:crosshair; }
     `
   ]
 })
@@ -240,6 +243,7 @@ export class MapViewComponent implements OnChanges, OnInit, OnDestroy {
     const styles = getComputedStyle(document.documentElement);
     const surface = (styles.getPropertyValue('--cs-map-bg') || '#ddd').trim();
     const fg = (styles.getPropertyValue('--ion-text-color') || '#333').trim();
+    const tileFilter = (styles.getPropertyValue('--cs-map-filter') || 'none').trim();
 
     ctx.fillStyle = surface;
     ctx.fillRect(0, 0, w, h);
@@ -257,6 +261,7 @@ export class MapViewComponent implements OnChanges, OnInit, OnDestroy {
     const ty1 = Math.floor((top + h) / tileScreen);
     const n = 2 ** tz;
 
+    ctx.filter = tileFilter;
     for (let tx = tx0; tx <= tx1; tx++) {
       for (let ty = ty0; ty <= ty1; ty++) {
         if (tx < 0 || ty < 0 || tx >= n || ty >= n) continue;
@@ -268,6 +273,7 @@ export class MapViewComponent implements OnChanges, OnInit, OnDestroy {
         }
       }
     }
+    ctx.filter = 'none';
 
     // heat blobs (drawn under markers, alpha-stacked)
     const heat = this.heat();

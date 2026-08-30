@@ -1,9 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  IonContent, IonHeader, IonInput, IonItem, IonLabel, IonList,
-  IonMenuButton, IonButtons, IonSearchbar, IonTitle, IonToolbar, IonNote, IonSelect,
-  IonSelectOption
+  IonContent, IonHeader, IonSearchbar, IonTitle, IonToolbar, IonSelect, IonSelectOption
 } from '@ionic/angular/standalone';
 import { NativeService, Snapshot } from '../services/native.service';
 import { StoreService } from '../services/store.service';
@@ -23,8 +21,8 @@ interface BandRowView {
   standalone: true,
   imports: [
     FormsModule, FlagComponent,
-    IonHeader, IonToolbar, IonTitle, IonButtons, IonMenuButton, IonContent,
-    IonSearchbar, IonList, IonItem, IonLabel, IonNote, IonInput, IonSelect, IonSelectOption
+    IonHeader, IonToolbar, IonTitle, IonContent,
+    IonSearchbar, IonSelect, IonSelectOption
   ],
   template: `
     <ion-header>
@@ -49,10 +47,6 @@ interface BandRowView {
 
         <div class="cs-card">
           <h3>Country spectrum allocation</h3>
-          <div class="cs-dim" style="margin-bottom:8px;">
-            Complete offline dataset from spectrum-tracker.com (94 countries),
-            bundled with the app.
-          </div>
           <ion-select
             [ngModel]="country()"
             (ngModelChange)="country.set($event)"
@@ -70,31 +64,31 @@ interface BandRowView {
               @if (cs.iso) { <cs-flag [iso]="cs.iso" [size]="20"></cs-flag> }
               <b style="font-size:14px;">{{ cs.name }}</b>
               @if (isAutoDetected()) { <span class="cs-badge ok" style="margin:0;">auto-detected</span> }
-              <span>· {{ cs.allocs.length }} allocations · {{ cs.source || 'bundled' }}@if (cs.updated) { · {{ cs.updated }}}</span>
             </div>
-            <ion-searchbar placeholder="Filter operator or band…" debounce="150" [(ngModel)]="allocFilter"></ion-searchbar>
-            @for (g of grouped(cs); track g.band) {
-              <div class="band-head">
-                <b>{{ g.band || '?' }}</b>
-                @if (g.layer) { <span class="layer">{{ g.layer }} MHz</span> }
-                @if (g.duplex) { <span class="cs-badge" [class.warn]="g.duplex === 'TDD'">{{ g.duplex }}</span> }
-              </div>
-              @for (a of g.rows; track $index) {
-                <div class="spec-row">
-                  <b>{{ a.op || a.ops.join(', ') }}</b>
-                  <span class="freqs">
-                    @if (a.dl && a.dl[0] != null) {
-                      {{ fmtRange(a.dl[0], a.dl[1]) }} DL
-                      @if (a.ul && a.ul[0] != null) { · UL {{ fmtRange(a.ul[0], a.ul[1]) }} }
-                    } @else {
-                      {{ a.ops.join(', ') }}
-                    }
-                    @if (a.total != null) { <span class="tot">{{ a.total }} MHz</span> }
-                    @if (a.scope && a.scope !== 'Nationwide') { <span class="scope">{{ a.scope }}</span> }
-                  </span>
+            <details class="dataset-details">
+              <summary>View {{ cs.allocs.length }} allocations</summary>
+              <ion-searchbar placeholder="Filter operator or band…" debounce="150" [(ngModel)]="allocFilter"></ion-searchbar>
+              @for (g of grouped(cs); track g.band) {
+                <div class="band-head">
+                  <b>{{ g.band || '?' }}</b>
+                  @if (g.layer) { <span class="layer">{{ g.layer }} MHz</span> }
+                  @if (g.duplex) { <span class="cs-badge" [class.warn]="g.duplex === 'TDD'">{{ g.duplex }}</span> }
                 </div>
+                @for (a of g.rows; track $index) {
+                  <div class="spec-row">
+                    <b>{{ a.op || a.ops.join(', ') }}</b>
+                    <span class="freqs">
+                      @if (a.dl && a.dl[0] != null) {
+                        {{ fmtRange(a.dl[0], a.dl[1]) }} DL
+                        @if (a.ul && a.ul[0] != null) { · UL {{ fmtRange(a.ul[0], a.ul[1]) }} }
+                      } @else { {{ a.ops.join(', ') }} }
+                      @if (a.total != null) { <span class="tot">{{ a.total }} MHz</span> }
+                      @if (a.scope && a.scope !== 'Nationwide') { <span class="scope">{{ a.scope }}</span> }
+                    </span>
+                  </div>
+                }
               }
-            }
+            </details>
           } @else {
             <div class="cs-empty">
               No country detected. Set one above or connect to a network.
@@ -102,8 +96,8 @@ interface BandRowView {
           }
         </div>
 
-        <div class="cs-card">
-          <h3>Browse all bands</h3>
+        <details class="cs-card dataset-details">
+          <summary>Browse all bands</summary>
           <ion-searchbar placeholder="e.g. n78, B20, 3500" [(ngModel)]="query" debounce="150"></ion-searchbar>
           <div class="spec-table">
             <div class="spec-row head"><span>Band</span><span>Frequencies</span></div>
@@ -111,25 +105,30 @@ interface BandRowView {
               <div class="spec-row"><b>{{ r.key }}</b><span>{{ r.range }}</span></div>
             }
           </div>
-        </div>
+        </details>
       </div>
     </ion-content>
   `,
   styles: [
     `
       .spec-row { display:flex; justify-content:space-between; gap:10px; padding:7px 2px; font-size:13px;
-                  border-bottom:1px dashed rgba(148,163,184,.18); }
+                  border-bottom:1px dashed var(--cs-border); }
       .spec-row.head { color:var(--ion-color-medium); text-transform:uppercase; font-size:11px; letter-spacing:.06em; }
       .band-head { display:flex; align-items:center; gap:8px; margin-top:12px; padding-bottom:4px;
-                   border-bottom:1px solid rgba(148,163,184,.3); }
+                   border-bottom:1px solid var(--cs-border); }
       .band-head b { font-size:15px; color: var(--cs-info, #4d8dff); }
       .band-head .layer { font-size:11.5px; color: var(--ion-color-medium); }
-      .freqs { text-align:right; font-size:12.5px; color:#cfd6e4; font-variant-numeric:tabular-nums; }
+      .freqs { text-align:right; font-size:12.5px; color:var(--ion-text-color); opacity:.82; font-variant-numeric:tabular-nums; }
       .tot { color: var(--ion-color-medium); margin-left:6px; }
       .scope { display:inline-block; margin-left:6px; font-size:10.5px; padding:1px 7px; border-radius:999px;
-               background: rgba(255,196,9,.14); color:#ffd75e; }
+               background: var(--cs-warn-soft); color:var(--cs-warn-fg); }
       .hot b { color: var(--cs-ok); }
-      ion-searchbar { padding-left:0; padding-right:0; --background: rgba(148,163,184,.12); min-height:34px; }
+      ion-searchbar { padding-left:0; padding-right:0; --background: var(--cs-accent-soft); min-height:34px; }
+      .dataset-details { margin-top:12px; }
+      .dataset-details summary { cursor:pointer; list-style:none; border-radius:12px; padding:11px 14px;
+                                 text-align:center; font-size:12px; font-weight:700; color:var(--cs-accent-fg);
+                                 background:var(--cs-accent-soft); }
+      .dataset-details summary::-webkit-details-marker { display:none; }
     `
   ]
 })

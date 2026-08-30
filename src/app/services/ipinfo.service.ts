@@ -13,6 +13,32 @@ export interface IpInfo {
   starlink: boolean;
 }
 
+const NETWORK_LABELS: Array<{ test: RegExp; name: string }> = [
+  { test: /starlink|spacex/i, name: 'Starlink' },
+  { test: /cloudflare/i, name: 'Cloudflare' },
+  { test: /google/i, name: 'Google' },
+  { test: /amazon|aws/i, name: 'Amazon AWS' },
+  { test: /microsoft|azure/i, name: 'Microsoft Azure' },
+  { test: /akamai/i, name: 'Akamai' },
+  { test: /\bntt\b|docomo/i, name: 'NTT' },
+  { test: /softbank/i, name: 'SoftBank' },
+  { test: /kddi/i, name: 'KDDI' },
+  { test: /orange/i, name: 'Orange' },
+  { test: /proxad/i, name: 'Free' },
+  { test: /sfr/i, name: 'SFR' },
+  { test: /bouygues/i, name: 'Bouygues Telecom' },
+  { test: /vodafone/i, name: 'Vodafone' },
+  { test: /deutsche telekom|telekom/i, name: 'Deutsche Telekom' },
+  { test: /\bt-?mobile\b/i, name: 'T-Mobile' },
+  { test: /\bat&t\b/i, name: 'AT&T' },
+  { test: /verizon/i, name: 'Verizon' }
+];
+
+export function enrichIp(info: IpInfo): IpInfo & { networkName: string } {
+  const match = NETWORK_LABELS.find(item => item.test.test(info.org));
+  return { ...info, networkName: match?.name || info.org };
+}
+
 const MAGIC = 0x4c4f4349;
 
 export function ipv4ToU32(ip: string): number | null {
@@ -79,6 +105,16 @@ export class IpInfoService {
 
   get isLoaded(): boolean {
     return this.loaded();
+  }
+
+  /** Auto-load quietly; the caller decides whether missing data is important. */
+  async ensureLoaded(): Promise<boolean> {
+    try {
+      await this.load();
+      return this.loaded();
+    } catch {
+      return false;
+    }
   }
 
   async load(): Promise<void> {
